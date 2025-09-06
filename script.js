@@ -162,24 +162,27 @@ function isProperDate(dateStr) {
         } else {
             const dateArr = dateStr.split("-");
             // Ex: ["2025", "09", "05"]
-            if (dateArr[0].length != 4) {
+            if (dateArr.length != 3) {
+                throw "Invalid date! Missing month, day, or year!";
+            } else if (dateArr[0].length != 4) {
                 throw "Invalid year!";
             } else if (dateArr[1].length != 2) {
                 throw "Invalid month format!";
             } else if (dateArr[2].length != 2) {
                 throw "Invalid day format!";
-            }
-            const monthsArr = { "01": 31, "02": 29, "03": 31, "04": 30, "05": 31, "06": 30, "07": 31, "08": 31, "09": 30, "10": 31, "11": 31, "12": 31 };
+            } else {
+                const monthsArr = { "01": 31, "02": 29, "03": 31, "04": 30, "05": 31, "06": 30, "07": 31, "08": 31, "09": 30, "10": 31, "11": 31, "12": 31 };
 
-            for (const monthNum in monthsArr) {
-                if (dateArr[1] === monthNum) {
-                    if (monthsArr[monthNum] < Number(dateArr[2])){
-                        throw `Invalid day of ${dateArr[2]}! Month is ${monthNum}, so day must be between 01 and ${monthsArr[monthNum]}`;
+                for (const monthNum in monthsArr) {
+                    if (dateArr[1] === monthNum) {
+                        if (monthsArr[monthNum] < Number(dateArr[2])) {
+                            throw `Invalid day of ${dateArr[2]}! Month is ${monthNum}, so day must be between 01 and ${monthsArr[monthNum]}`;
+                        }
+                        return monthsArr[monthNum] >= Number(dateArr[2]);
                     }
-                    return monthsArr[monthNum] >= Number(dateArr[2]);
                 }
+                throw `Invalid month of ${dateArr[1]}! Month must be between 01 and 12.`;
             }
-            throw `Invalid month of ${dateArr[1]}! Month must be between 01 and 12.`;
         }
 
     } catch (error) {
@@ -210,14 +213,7 @@ function findLearnerObj(resultsArray, learnerId) {
     return -1;
 }
 
-// Error message for unexpected errors
-function errorMsgUnexpected(category, variableName = "") {
-    if (!variableName) {
-        return `Unexpected error for the validation of ${category}!`;
-    }
-    return `Unexpected error for ${category}'s ${variableName} validation!`;
-}
-
+// Returns the error message for undefined variables. If category is only provided, it is treated as the variable name.
 function errorMsgUndefined(category, variableName = "") {
     if (!variableName) {
         return `The ${category} must be defined!`;
@@ -225,15 +221,17 @@ function errorMsgUndefined(category, variableName = "") {
     return `The ${variableName} of ${category} must be defined!`;
 }
 
+// Returns the error message for variables of the wrong type. If category is only provided, it is treated as the variable name.
 function errorMsgWrongType(category, variableName = "", type, expectedType) {
     const vowels = ["a", "e", "i", "o", "u"];
-    const aWord = vowels.includes(expectedType[0]) ? "an" : "a";
+    const aWord = vowels.includes(expectedType[0]) ? "an" : "a"; // Use a/an since type can be object
     if (!variableName) {
         return `The ${category} cannot be the type ${type}! Must be ${aWord} ${expectedType}.`;
     }
     return `The ${category}'s ${variableName} cannot be the type ${type}! Must be ${aWord} ${expectedType}.`;
 }
 
+// Returns the error message when the variable's value is lower than the lower bound.
 function errorMsgInvalidNumberValue(category, variableName, variable, additionalReason = "", lowerBound = 1) {
     if (additionalReason) {
         return `The ${variableName} of ${category} is ${variable} and cannot be less than ${lowerBound}! ${additionalReason}`;
@@ -241,15 +239,18 @@ function errorMsgInvalidNumberValue(category, variableName, variable, additional
     return `The ${variableName} of ${category} is ${variable} and cannot be less than ${lowerBound}!`;
 }
 
+// Returns the error message when the variable is a decimal/float value when it shouldn't be.
 function errorMsgFloatValue(category, variableName, variable) {
     return `The ${variableName} of ${category} is ${variable} and must be a whole number!`;
 }
 
+// Returns the error message when the value of the shared variable for two different objects are not the same.
 function errorMsgUnequalIds(category1, variableName, category2) {
     return `The ${variableName} of ${category1} is not equal to the ${variableName} of ${category2}!`;
 }
 
-function errorMsgUnequalKeys(category, reason){
+// Returns the error message when the provided keys do not match the expected keys.
+function errorMsgUnequalKeys(category, reason) {
     const vowels = ["a", "e", "i", "o", "u"];
     const aWord = vowels.includes(category[0]) ? "an" : "a";
     return `The keys for the ${category} provided and expected keys for ${aWord} ${category} are different because this ${category} ${reason}`;
@@ -271,13 +272,15 @@ function validateKeys(keys, expectedKeys) {
     return "";
 }
 
+// Validates the information of the course provided by checking object structure, variable types, 
 function validateCourse(course) {
     const category = "course";
+    const hasErrors = false;
     try {
-        if (!course) {
+        if (course === undefined) {
             throw (errorMsgUndefined(category));
-        } else if (typeof course != 'object') {
-            throw (errorMsgWrongType(category));
+        } else if (typeof course != "object") {
+            throw (errorMsgWrongType(category, "", typeof course, "object"));
         } else { // Move onto other validation logic
             // Validate that the keys are properly named and that none of them are missing.
             try {
@@ -288,14 +291,15 @@ function validateCourse(course) {
                 };
             } catch (error) {
                 console.log(error);
+                hasErrors = true;
             }
 
             // Validate course group's id
             try {
-                if (!course.id) {
+                if (course.id === undefined) {
                     throw (errorMsgUndefined(category, "id"));
                 } else if (typeof course.id != "number") {
-                    throw (errorMsgWrongType(category, "id", typeof course.id));
+                    throw (errorMsgWrongType(category, "id", typeof course.id, "number"));
                 } else if (course.id < 1) {
                     throw (errorMsgInvalidNumberValue(category, "id", course.id));
                 } else if (course.id % 1) {
@@ -303,38 +307,38 @@ function validateCourse(course) {
                 }
             } catch (error) {
                 console.log(error);
+                hasErrors = true;
             }
 
             // Validate course group's name
             try {
-                if (!course.name) {
+                if (course.name === undefined) {
                     throw (errorMsgUndefined(category, "name"));
                 } else if (typeof course.name != "string") {
-                    throw (errorMsgWrongType(category, "name", typeof course.name));
+                    throw (errorMsgWrongType(category, "name", typeof course.name, "string"));
                 }
             } catch (error) {
                 console.log(error);
+                hasErrors = true;
             }
         }
     } catch (error) {
         console.log(error);
+        hasErrors = true;
     }
 
-    return true;
+    return !hasErrors;
 }
-
-// If an AssignmentGroup does not belong to its course (mismatching course_id), your program should throw an error, letting the user know that the input was invalid. Similar data validation should occur elsewhere within the program.
-
-// You should also account for potential errors in the data that your program receives. What if points_possible is 0? You cannot divide by zero. What if a value that you are expecting to be a number is instead a string? 
 
 // Check the entire assignment group
 function validateAssignments(assignmentGroup, courseId) {
     const category = "assignment group";
+    const hasErrors = false;
     try {
-        if (!assignmentGroup) {
+        if (assignmentGroup === undefined) {
             throw (errorMsgUndefined(category));
-        } else if (typeof assignmentGroup != 'object') {
-            throw (errorMsgWrongType(category));
+        } else if (typeof assignmentGroup != "object") {
+            throw (errorMsgWrongType(category, "", typeof assignmentGroup, "object"));
         } else { // Move onto other validation logic
             // Validate that the keys are properly named and that none of them are missing.
             try {
@@ -345,14 +349,15 @@ function validateAssignments(assignmentGroup, courseId) {
                 };
             } catch (error) {
                 console.log(error);
+                hasErrors = true;
             }
 
             // Validate assignment group's id
             try {
-                if (!assignmentGroup.id) {
+                if (assignmentGroup.id === undefined) {
                     throw (errorMsgUndefined(category, "id"));
                 } else if (typeof assignmentGroup.id != "number") {
-                    throw (errorMsgWrongType(category, "id", typeof assignmentGroup.id));
+                    throw (errorMsgWrongType(category, "id", typeof assignmentGroup.id, "number"));
                 } else if (assignmentGroup.id < 1) {
                     throw (errorMsgInvalidNumberValue(category, "id", assignmentGroup.id));
                 } else if (assignmentGroup.id % 1) {
@@ -360,25 +365,27 @@ function validateAssignments(assignmentGroup, courseId) {
                 }
             } catch (error) {
                 console.log(error);
+                hasErrors = true;
             }
 
             // Validate assignment group's name
             try {
-                if (!assignmentGroup.name) {
+                if (assignmentGroup.name === undefined) {
                     throw (errorMsgUndefined(category, "name"));
                 } else if (typeof assignmentGroup.name != "string") {
-                    throw (errorMsgWrongType(category, "name", typeof assignmentGroup.name));
+                    throw (errorMsgWrongType(category, "name", typeof assignmentGroup.name, "string"));
                 }
             } catch (error) {
                 console.log(error);
+                hasErrors = true;
             }
 
             // Validate assignment group's course id
             try {
-                if (!assignmentGroup.course_id) {
+                if (assignmentGroup.course_id === undefined) {
                     throw (errorMsgUndefined(category, "course id"));
                 } else if (typeof assignmentGroup.course_id != "number") {
-                    throw (errorMsgWrongType(category, "course id", typeof assignmentGroup.course_id));
+                    throw (errorMsgWrongType(category, "course id", typeof assignmentGroup.course_id, "number"));
                 } else if (assignmentGroup.course_id < 1) {
                     throw (errorMsgInvalidNumberValue(category, "course id", assignmentGroup.course_id));
                 } else if (assignmentGroup.course_id % 1) {
@@ -388,14 +395,15 @@ function validateAssignments(assignmentGroup, courseId) {
                 }
             } catch (error) {
                 console.log(error);
+                hasErrors = true;
             }
 
-            // Validate assignment group's group_weight
+            // Validate assignment group's group weight
             try {
-                if (!assignmentGroup.group_weight) {
+                if (assignmentGroup.group_weight === undefined) {
                     throw (errorMsgUndefined(category, "group weight"));
                 } else if (typeof assignmentGroup.group_weight != "number") {
-                    throw (errorMsgWrongType(category, "group weight", typeof assignmentGroup.group_weight));
+                    throw (errorMsgWrongType(category, "group weight", typeof assignmentGroup.group_weight, "number"));
                 } else if (assignmentGroup.group_weight < 1) {
                     throw (errorMsgInvalidNumberValue(category, "group weight", assignmentGroup.group_weight));
                 } else if (assignmentGroup.group_weight % 1) {
@@ -403,34 +411,38 @@ function validateAssignments(assignmentGroup, courseId) {
                 }
             } catch (error) {
                 console.log(error);
+                hasErrors = true;
             }
 
             // Validate each assignment group's assigments array:
             assignmentGroup.assignments.forEach(assignment => {
                 try {
                     if (!validateAssignment(assignment)) {
-                        throw "Assignment is invalid!";
+                        throw `Assignment of id ${assignment.id} from assignment group of id ${assignmentGroup.id} is invalid!`;
                     }
                 } catch (error) {
                     console.log(error);
+                    hasErrors = true;
                 }
             });
         }
     } catch (error) {
         console.log(error);
+        hasErrors = true;
     }
 
-    return true;
+    return !hasErrors;
 }
 
 // Check individual assignments
 function validateAssignment(assignment) {
     const category = "assignment";
+    const hasErrors = false;
     try {
-        if (!assignment) {
+        if (assignment === undefined) {
             throw (errorMsgUndefined(category));
-        } else if (typeof assignment != 'object') {
-            throw (errorMsgWrongType(category));
+        } else if (typeof assignment != "object") {
+            throw (errorMsgWrongType(category, "", typeof assignment, "object"));
         } else { // Move onto other validation logic
             // Validate that the keys are properly named and that none of them are missing.
             try {
@@ -441,14 +453,15 @@ function validateAssignment(assignment) {
                 };
             } catch (error) {
                 console.log(error);
+                hasErrors = true;
             }
 
             // Validate assignment group's id
             try {
-                if (!assignment.id) {
+                if (assignment.id === undefined) {
                     throw (errorMsgUndefined(category, "id"));
                 } else if (typeof assignment.id != "number") {
-                    throw (errorMsgWrongType(category, "id", typeof assignment.id));
+                    throw (errorMsgWrongType(category, "id", typeof assignment.id, "number"));
                 } else if (assignment.id < 1) {
                     throw (errorMsgInvalidNumberValue(category, "id", assignment.id));
                 } else if (assignment.id % 1) {
@@ -456,36 +469,41 @@ function validateAssignment(assignment) {
                 }
             } catch (error) {
                 console.log(error);
+                hasErrors = true;
             }
 
             // Validate assignment group's name
             try {
-                if (!assignment.name) {
+                if (assignment.name === undefined) {
                     throw (errorMsgUndefined(category, "name"));
                 } else if (typeof assignment.name != "string") {
-                    throw (errorMsgWrongType(category, "name", typeof assignment.name));
+                    throw (errorMsgWrongType(category, "name", typeof assignment.name, "string"));
                 }
             } catch (error) {
                 console.log(error);
+                hasErrors = true;
             }
 
             // Validate assignment group's due date
             try {
-                if (!assignment.due_at) {
+                if (assignment.due_at === undefined) {
                     throw (errorMsgUndefined(category, "due date"));
                 } else if (typeof assignment.due_at != "string") {
-                    throw (errorMsgWrongType(category, "due date", typeof assignment.due_at));
+                    throw (errorMsgWrongType(category, "due date", typeof assignment.due_at, "string"));
+                } else if (!isProperDate(assignment.due_at)) {
+                    throw `The due date of the assignment is invalid!`;
                 }
             } catch (error) {
                 console.log(error);
+                hasErrors = true;
             }
 
             // Validate assignment group's points possible
             try {
-                if (!assignment.points_possible) {
+                if (assignment.points_possible === undefined) {
                     throw (errorMsgUndefined(category, "points possible"));
                 } else if (typeof assignment.points_possible != "number") {
-                    throw (errorMsgWrongType(category, "points possible", typeof assignment.points_possible));
+                    throw (errorMsgWrongType(category, "points possible", typeof assignment.points_possible, "number"));
                 } else if (assignment.points_possible < 1) {
                     throw (errorMsgInvalidNumberValue(category, "points possible", assignment.points_possible, "Cannot divide by 0!"));
                 } else if (assignment.points_possible % 1) {
@@ -493,23 +511,26 @@ function validateAssignment(assignment) {
                 }
             } catch (error) {
                 console.log(error);
+                hasErrors = true;
             }
         }
     } catch (error) {
         console.log(error);
+        hasErrors = true;
     }
 
-    return true;
+    return !hasErrors;
 }
 
 // Check individual submissions
 function validateSubmissions(submissions) {
     const category = "learners' submissions";
+    const hasErrors = false;
     try {
-        if (!submissions) {
+        if (submissions === undefined) {
             throw (errorMsgUndefined(category));
-        } else if (typeof submissions != 'object') {
-            throw (errorMsgWrongType(category));
+        } else if (typeof submissions != "object") {
+            throw (errorMsgWrongType(category, "", typeof submissions, "object"));
         } else { // Move onto other validation logic
 
             // Validate each assignment group's assigments array:
@@ -520,23 +541,26 @@ function validateSubmissions(submissions) {
                     }
                 } catch (error) {
                     console.log(error);
+                    hasErrors = true;
                 }
             });
         }
     } catch (error) {
         console.log(error);
+        hasErrors = true;
     }
 
-    return true;
+    return !hasErrors;
 }
 
 function validateLearnerSubmission(learnerSubmission) {
     const category = "learner's submission";
+    const hasErrors = false;
     try {
-        if (!learnerSubmission) {
+        if (learnerSubmission === undefined) {
             throw (errorMsgUndefined(category));
-        } else if (typeof learnerSubmission != 'object') {
-            throw (errorMsgWrongType(category));
+        } else if (typeof learnerSubmission != "object") {
+            throw (errorMsgWrongType(category, "", typeof learnerSubmission, "object"));
         } else { // Move onto other validation logic
             // Validate that the keys are properly named and that none of them are missing.
             try {
@@ -547,14 +571,15 @@ function validateLearnerSubmission(learnerSubmission) {
                 };
             } catch (error) {
                 console.log(error);
+                hasErrors = true;
             }
 
             // Validate the learner_id of the learner's submission
             try {
-                if (!learnerSubmission.learner_id) {
+                if (learnerSubmission.learner_id === undefined) {
                     throw (errorMsgUndefined(category, "learner id"));
                 } else if (typeof learnerSubmission.learner_id != "number") {
-                    throw (errorMsgWrongType(category, "learner id", typeof learnerSubmission.learner_id));
+                    throw (errorMsgWrongType(category, "learner id", typeof learnerSubmission.learner_id, "number"));
                 } else if (learnerSubmission.learner_id < 1) {
                     throw (errorMsgInvalidNumberValue(category, "learner id", learnerSubmission.learner_id));
                 } else if (learnerSubmission.learner_id % 1) {
@@ -562,14 +587,15 @@ function validateLearnerSubmission(learnerSubmission) {
                 }
             } catch (error) {
                 console.log(error);
+                hasErrors = true;
             }
 
             // Validate the assignment_id of the learner's submission
             try {
-                if (!learnerSubmission.assignment_id) {
+                if (learnerSubmission.assignment_id === undefined) {
                     throw (errorMsgUndefined(category, "assignment id"));
                 } else if (typeof learnerSubmission.assignment_id != "number") {
-                    throw (errorMsgWrongType(category, "assignment id", typeof learnerSubmission.assignment_id));
+                    throw (errorMsgWrongType(category, "assignment id", typeof learnerSubmission.assignment_id, "number"));
                 } else if (learnerSubmission.assignment_id < 1) {
                     throw (errorMsgInvalidNumberValue(category, "assignment id", learnerSubmission.assignment_id, "Cannot divide by 0!"));
                 } else if (learnerSubmission.assignment_id % 1) {
@@ -577,6 +603,7 @@ function validateLearnerSubmission(learnerSubmission) {
                 }
             } catch (error) {
                 console.log(error);
+                hasErrors = true;
             }
 
             // Validate the inner submission's details of the learner's submission
@@ -588,22 +615,25 @@ function validateLearnerSubmission(learnerSubmission) {
 
             } catch (error) {
                 console.log(error);
+                hasErrors = true;
             }
         }
     } catch (error) {
         console.log(error);
+        hasErrors = true;
     }
 
-    return true;
+    return !hasErrors;
 }
 
 function validateInnerSubmission(submissionDetails) {
     const category = "submission's details";
+    const hasErrors = false;
     try {
-        if (!submissionDetails) {
+        if (submissionDetails === undefined) {
             throw (errorMsgUndefined(category));
-        } else if (typeof submissionDetails != 'object') {
-            throw (errorMsgWrongType(category));
+        } else if (typeof submissionDetails != "object") {
+            throw (errorMsgWrongType(category, "", typeof submissionDetails, "object"));
         } else { // Move onto other validation logic
             // Validate that the keys are properly named and that none of them are missing.
             try {
@@ -614,37 +644,43 @@ function validateInnerSubmission(submissionDetails) {
                 };
             } catch (error) {
                 console.log(error);
+                hasErrors = true;
             }
 
             // Validate the time of the learner's submission
             try {
-                if (!submissionDetails.submitted_at) {
+                if (submissionDetails.submitted_at === undefined) {
                     throw (errorMsgUndefined(category, "submitted at"));
                 } else if (typeof submissionDetails.submitted_at != "string") {
                     throw (errorMsgWrongType(category, "submitted at", typeof submissionDetails.submitted_at, "string"));
+                } else if (!isProperDate(submissionDetails.submitted_at)) {
+                    throw `The date that the submission was submitted at is invalid!`;
                 }
             } catch (error) {
                 console.log(error);
+                hasErrors = true;
             }
 
             // Validate the score of the learner's submission
             try {
-                if (!submissionDetails.score) {
+                if (submissionDetails.score === undefined) {
                     throw (errorMsgUndefined(category, "score"));
                 } else if (typeof submissionDetails.score != "number") {
-                    throw (errorMsgWrongType(category, "score", typeof submissionDetails.score));
+                    throw (errorMsgWrongType(category, "score", typeof submissionDetails.score, "number"));
                 } else if (submissionDetails.score < 0) {
                     throw (errorMsgInvalidNumberValue(category, "score", submissionDetails.score, "Cannot be negative!", 0));
                 }
             } catch (error) {
                 console.log(error);
+                hasErrors = true;
             }
         }
     } catch (error) {
         console.log(error);
+        hasErrors = true;
     }
 
-    return true;
+    return !hasErrors;
 }
 
 // Tests
