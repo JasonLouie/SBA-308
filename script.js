@@ -79,11 +79,12 @@ const LearnerSubmissions = [
 ];
 
 function getLearnerData(course, ag, submissions) {
-    const results = [];
-
-    if (validateAssignments(ag, course.id) && validateCourse(course) && validateSubmissions(submissions)) {
+    // Check if the course, assignment group, and submissions are valid
+    if (validateCourse(course) && validateAssignments(ag, course.id) && validateSubmissions(submissions)) {
         console.log("Everything is good!");
     }
+
+    const results = [];
 
     if (submissions) {
         for (let i = 0; i < submissions.length; i++) {
@@ -100,17 +101,18 @@ function getLearnerData(course, ag, submissions) {
                 results.push(learnerObj);
                 learnerObjIndex = findLearnerObj(results, learnerSub.learner_id);
             }
-            // Only add assignments that have close due dates.
-            if (includeAssignment(ag.assignments[aId])) {
-                const learnerObj = results[learnerObjIndex];
-                if (aId >= 0) {
-                    const score = isLate(ag.assignments[aId], learnerSub.submission.submitted_at) ? (learnerSub.submission.score - (ag.assignments[aId].points_possible * 0.1)) : learnerSub.submission.score;
-                    const grade = score / ag.assignments[aId].points_possible;
-                    learnerObj[learnerSub.assignment_id] = roundNum(grade);
-                    learnerObj.totalScore += score;
-                    learnerObj.totalPointsPossible += ag.assignments[aId].points_possible;
-                }
-            }
+            // Only add assignments to the learnerObj that have close due dates.
+            const canBeChecked = includeAssignment(ag.assignments[aId])
+            if (!canBeChecked || aId < 0) continue; // Skip assignments that are not close to the due date.
+
+            const learnerObj = results[learnerObjIndex];
+            const lateAssignment = isLate(ag.assignments[aId], learnerSub.submission.submitted_at);
+            const pointsPossible = ag.assignments[aId].points_possible;
+            const score = (lateAssignment) ? (learnerSub.submission.score - (pointsPossible * 0.1)) : learnerSub.submission.score;
+            const grade = score / pointsPossible;
+            learnerObj[learnerSub.assignment_id] = roundNum(grade);
+            learnerObj.totalScore += score;
+            learnerObj.totalPointsPossible += pointsPossible;
         };
     }
 
@@ -186,9 +188,6 @@ function isProperDate(dateStr) {
     return false;
 }
 
-console.log(isProperDate("2024-05-05"));
-console.log(isProperDate("2024-05-45"));
-
 // Returns the index of the assignment object with assignment_id = assignmentId
 function findAssignment(assignments, assignmentId) {
     for (let i = 0; i < assignments.length; i++) {
@@ -211,6 +210,7 @@ function findLearnerObj(resultsArray, learnerId) {
     return -1;
 }
 
+// Error message for unexpected errors
 function errorMsgUnexpected(category, variableName = "") {
     if (!variableName) {
         return `Unexpected error for the validation of ${category}!`;
@@ -234,11 +234,11 @@ function errorMsgWrongType(category, variableName = "", type, expectedType) {
     return `The ${category}'s ${variableName} cannot be the type ${type}! Must be ${aWord} ${expectedType}.`;
 }
 
-function errorMsgNegativeValue(category, variableName, variable, additionalReason = "") {
+function errorMsgInvalidNumberValue(category, variableName, variable, additionalReason = "", lowerBound = 1) {
     if (additionalReason) {
-        return `The ${variableName} of ${category} is ${variable} and cannot be less than 1! ${additionalReason}`;
+        return `The ${variableName} of ${category} is ${variable} and cannot be less than ${lowerBound}! ${additionalReason}`;
     }
-    return `The ${variableName} of ${category} is ${variable} and cannot be less than 1!`;
+    return `The ${variableName} of ${category} is ${variable} and cannot be less than ${lowerBound}!`;
 }
 
 function errorMsgFloatValue(category, variableName, variable) {
@@ -249,28 +249,10 @@ function errorMsgUnequalIds(category1, variableName, category2) {
     return `The ${variableName} of ${category1} is not equal to the ${variableName} of ${category2}!`;
 }
 
-// Error message for checking if two arrays are equal. Reason is why the arrays are not equal for error msgs.
-function errorMsgUnequalArrays(arr1Name, arr2Name, reason) {
-    if (!reason) {
-        return `${arr1Name} and ${arr2Name} are unequal`;
-    } else {
-        return `${arr1Name} and ${arr2Name} are ${reason}`;
-    }
-
-}
-
-// Validate that arr1 is equal to arr2.
-function equalArrays(arr1, arr2) {
-    if (!arr1 || !arr2) {
-        return false;
-    } else if ((arr1.length != arr2.length)) {
-        return false;
-    } else {
-        for (let i = 0; i < arr1.length; i++) {
-            if (arr1[i] != arr2[i]) return false;
-        }
-    }
-    return true;
+function errorMsgUnequalKeys(category, reason){
+    const vowels = ["a", "e", "i", "o", "u"];
+    const aWord = vowels.includes(category[0]) ? "an" : "a";
+    return `The keys for the ${category} provided and expected keys for ${aWord} ${category} are different because this ${category} ${reason}`;
 }
 
 // Checks if keys are equal to expected keys and gives a reason if they are not equal (reason is relative to keys).
@@ -286,11 +268,58 @@ function validateKeys(keys, expectedKeys) {
             if (keys[i] != expectedKeys[i]) return `has the key ${keys[i]} instead of ${expectedKeys[i]}`;
         }
     }
-    return "equal keys";
+    return "";
 }
 
 function validateCourse(course) {
-    // TO-DO: Check if id, course_id, and group_weight a number. Check if name is a string.
+    const category = "course";
+    try {
+        if (!course) {
+            throw (errorMsgUndefined(category));
+        } else if (typeof course != 'object') {
+            throw (errorMsgWrongType(category));
+        } else { // Move onto other validation logic
+            // Validate that the keys are properly named and that none of them are missing.
+            try {
+                const courseKeys = ["id", "name"];
+                const reason = validateKeys(Object.keys(course), courseKeys);
+                if (reason) {
+                    throw (errorMsgUnequalKeys(category, reason));
+                };
+            } catch (error) {
+                console.log(error);
+            }
+
+            // Validate course group's id
+            try {
+                if (!course.id) {
+                    throw (errorMsgUndefined(category, "id"));
+                } else if (typeof course.id != "number") {
+                    throw (errorMsgWrongType(category, "id", typeof course.id));
+                } else if (course.id < 1) {
+                    throw (errorMsgInvalidNumberValue(category, "id", course.id));
+                } else if (course.id % 1) {
+                    throw (errorMsgFloatValue(category, "id", course.id));
+                }
+            } catch (error) {
+                console.log(error);
+            }
+
+            // Validate course group's name
+            try {
+                if (!course.name) {
+                    throw (errorMsgUndefined(category, "name"));
+                } else if (typeof course.name != "string") {
+                    throw (errorMsgWrongType(category, "name", typeof course.name));
+                }
+            } catch (error) {
+                console.log(error);
+            }
+        }
+    } catch (error) {
+        console.log(error);
+    }
+
     return true;
 }
 
@@ -311,8 +340,8 @@ function validateAssignments(assignmentGroup, courseId) {
             try {
                 const assignmentGroupKeys = ["id", "name", "course_id", "group_weight", "assignments"];
                 const reason = validateKeys(Object.keys(assignmentGroup), assignmentGroupKeys);
-                if (reason != "equal keys") {
-                    throw (errorMsgUnequalArrays(`The keys for ${category}`, "expected keys for an assignment group", `different because this assignment group ${reason}`));
+                if (reason) {
+                    throw (errorMsgUnequalKeys(category, reason));
                 };
             } catch (error) {
                 console.log(error);
@@ -325,7 +354,7 @@ function validateAssignments(assignmentGroup, courseId) {
                 } else if (typeof assignmentGroup.id != "number") {
                     throw (errorMsgWrongType(category, "id", typeof assignmentGroup.id));
                 } else if (assignmentGroup.id < 1) {
-                    throw (errorMsgNegativeValue(category, "id", assignmentGroup.id));
+                    throw (errorMsgInvalidNumberValue(category, "id", assignmentGroup.id));
                 } else if (assignmentGroup.id % 1) {
                     throw (errorMsgFloatValue(category, "id", assignmentGroup.id));
                 }
@@ -351,7 +380,7 @@ function validateAssignments(assignmentGroup, courseId) {
                 } else if (typeof assignmentGroup.course_id != "number") {
                     throw (errorMsgWrongType(category, "course id", typeof assignmentGroup.course_id));
                 } else if (assignmentGroup.course_id < 1) {
-                    throw (errorMsgNegativeValue(category, "course id", assignmentGroup.course_id));
+                    throw (errorMsgInvalidNumberValue(category, "course id", assignmentGroup.course_id));
                 } else if (assignmentGroup.course_id % 1) {
                     throw (errorMsgFloatValue(category, "course id", assignmentGroup.course_id));
                 } else if (assignmentGroup.course_id != courseId) {
@@ -368,7 +397,7 @@ function validateAssignments(assignmentGroup, courseId) {
                 } else if (typeof assignmentGroup.group_weight != "number") {
                     throw (errorMsgWrongType(category, "group weight", typeof assignmentGroup.group_weight));
                 } else if (assignmentGroup.group_weight < 1) {
-                    throw (errorMsgNegativeValue(category, "group weight", assignmentGroup.group_weight));
+                    throw (errorMsgInvalidNumberValue(category, "group weight", assignmentGroup.group_weight));
                 } else if (assignmentGroup.group_weight % 1) {
                     throw (errorMsgFloatValue(category, "group weight", assignmentGroup.group_weight));
                 }
@@ -407,8 +436,8 @@ function validateAssignment(assignment) {
             try {
                 const assignmentKeys = ["id", "name", "due_at", "points_possible"];
                 const reason = validateKeys(Object.keys(assignment), assignmentKeys);
-                if (reason != "equal keys") {
-                    throw (errorMsgUnequalArrays(`The keys for ${category}`, "expected keys for an assignment group", `different because this assignment group ${reason}`));
+                if (reason) {
+                    throw (errorMsgUnequalKeys(category, reason));
                 };
             } catch (error) {
                 console.log(error);
@@ -421,7 +450,7 @@ function validateAssignment(assignment) {
                 } else if (typeof assignment.id != "number") {
                     throw (errorMsgWrongType(category, "id", typeof assignment.id));
                 } else if (assignment.id < 1) {
-                    throw (errorMsgNegativeValue(category, "id", assignment.id));
+                    throw (errorMsgInvalidNumberValue(category, "id", assignment.id));
                 } else if (assignment.id % 1) {
                     throw (errorMsgFloatValue(category, "id", assignment.id));
                 }
@@ -458,7 +487,7 @@ function validateAssignment(assignment) {
                 } else if (typeof assignment.points_possible != "number") {
                     throw (errorMsgWrongType(category, "points possible", typeof assignment.points_possible));
                 } else if (assignment.points_possible < 1) {
-                    throw (errorMsgNegativeValue(category, "points possible", assignment.points_possible, "Cannot divide by 0!"));
+                    throw (errorMsgInvalidNumberValue(category, "points possible", assignment.points_possible, "Cannot divide by 0!"));
                 } else if (assignment.points_possible % 1) {
                     throw (errorMsgFloatValue(category, "points possible", assignment.points_possible));
                 }
@@ -513,8 +542,8 @@ function validateLearnerSubmission(learnerSubmission) {
             try {
                 const learnerSubmissionKeys = ["learner_id", "assignment_id", "submission"];
                 const reason = validateKeys(Object.keys(learnerSubmission), learnerSubmissionKeys);
-                if (reason != "equal keys") {
-                    throw (errorMsgUnequalArrays(`The keys for ${category}`, "expected keys for an learnerSubmission group", `different because this learnerSubmission group ${reason}`));
+                if (reason) {
+                    throw (errorMsgUnequalKeys(category, reason));
                 };
             } catch (error) {
                 console.log(error);
@@ -527,7 +556,7 @@ function validateLearnerSubmission(learnerSubmission) {
                 } else if (typeof learnerSubmission.learner_id != "number") {
                     throw (errorMsgWrongType(category, "learner id", typeof learnerSubmission.learner_id));
                 } else if (learnerSubmission.learner_id < 1) {
-                    throw (errorMsgNegativeValue(category, "learner id", learnerSubmission.learner_id));
+                    throw (errorMsgInvalidNumberValue(category, "learner id", learnerSubmission.learner_id));
                 } else if (learnerSubmission.learner_id % 1) {
                     throw (errorMsgFloatValue(category, "learner id", learnerSubmission.id));
                 }
@@ -542,7 +571,7 @@ function validateLearnerSubmission(learnerSubmission) {
                 } else if (typeof learnerSubmission.assignment_id != "number") {
                     throw (errorMsgWrongType(category, "assignment id", typeof learnerSubmission.assignment_id));
                 } else if (learnerSubmission.assignment_id < 1) {
-                    throw (errorMsgNegativeValue(category, "assignment id", learnerSubmission.assignment_id, "Cannot divide by 0!"));
+                    throw (errorMsgInvalidNumberValue(category, "assignment id", learnerSubmission.assignment_id, "Cannot divide by 0!"));
                 } else if (learnerSubmission.assignment_id % 1) {
                     throw (errorMsgFloatValue(category, "assignment id", learnerSubmission.assignment_id));
                 }
@@ -554,7 +583,7 @@ function validateLearnerSubmission(learnerSubmission) {
             try {
                 // Validate each assignment group's assigments array:
                 if (!validateInnerSubmission(learnerSubmission.submission)) {
-                    throw errorMsgUnexpected("learner's submission details");
+                    throw `Error validating the learner's submission details with learner id of ${learnerSubmission.learner_id} and assignment id of ${learnerSubmission.assignment_id}!`;
                 }
 
             } catch (error) {
@@ -569,7 +598,7 @@ function validateLearnerSubmission(learnerSubmission) {
 }
 
 function validateInnerSubmission(submissionDetails) {
-    const category = "submission details";
+    const category = "submission's details";
     try {
         if (!submissionDetails) {
             throw (errorMsgUndefined(category));
@@ -580,8 +609,8 @@ function validateInnerSubmission(submissionDetails) {
             try {
                 const submissionDetailsKeys = ["submitted_at", "score"];
                 const reason = validateKeys(Object.keys(submissionDetails), submissionDetailsKeys);
-                if (reason != "equal keys") {
-                    throw (errorMsgUnequalArrays(`The keys for ${category}`, "expected keys for an submissionDetails group", `different because this submissionDetails group ${reason}`));
+                if (reason) {
+                    throw (errorMsgUnequalKeys(category, reason));
                 };
             } catch (error) {
                 console.log(error);
@@ -601,13 +630,11 @@ function validateInnerSubmission(submissionDetails) {
             // Validate the score of the learner's submission
             try {
                 if (!submissionDetails.score) {
-                    throw (errorMsgUndefined(category, "points possible"));
+                    throw (errorMsgUndefined(category, "score"));
                 } else if (typeof submissionDetails.score != "number") {
-                    throw (errorMsgWrongType(category, "points possible", typeof submissionDetails.score));
+                    throw (errorMsgWrongType(category, "score", typeof submissionDetails.score));
                 } else if (submissionDetails.score < 0) {
-                    throw (errorMsgNegativeValue(category, "points possible", submissionDetails.score, "Cannot divide by 0!"));
-                } else if (submissionDetails.score % 1) {
-                    throw (errorMsgFloatValue(category, "points possible", submissionDetails.score));
+                    throw (errorMsgInvalidNumberValue(category, "score", submissionDetails.score, "Cannot be negative!", 0));
                 }
             } catch (error) {
                 console.log(error);
