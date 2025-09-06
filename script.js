@@ -80,8 +80,6 @@ const LearnerSubmissions = [
 
 function getLearnerData(course, ag, submissions) {
     const results = [];
-    let currentID = -1;
-    let startingIndex = 0;
 
     if (validateAssignments(ag, course.id) && validateCourse(course) && validateSubmissions(submissions)) {
         console.log("Everything is good!");
@@ -94,14 +92,11 @@ function getLearnerData(course, ag, submissions) {
             let learnerObjIndex = findLearnerObj(results, learnerSub.learner_id);
             const aId = findAssignment(ag.assignments, learnerSub.assignment_id);
             if (learnerObjIndex === -1) { // If learnerObj does not exist, immediately initalize the first user
-                if (currentID >= 0 && results) {
-                    // console.log("Calc avg", currentID);
-                    calculateAvg(results[findLearnerObj(results, currentID)], ag.assignments, submissions.slice(startingIndex, i));
-                }
-                startingIndex = i;
-                currentID = learnerSub.learner_id;
+
                 const learnerObj = {};
                 learnerObj.id = learnerSub.learner_id;
+                learnerObj.totalScore = 0;
+                learnerObj.totalPointsPossible = 0;
                 results.push(learnerObj);
                 learnerObjIndex = findLearnerObj(results, learnerSub.learner_id);
             }
@@ -111,37 +106,39 @@ function getLearnerData(course, ag, submissions) {
                 if (aId >= 0) {
                     const score = isLate(ag.assignments[aId], learnerSub.submission.submitted_at) ? (learnerSub.submission.score - (ag.assignments[aId].points_possible * 0.1)) : learnerSub.submission.score;
                     const grade = score / ag.assignments[aId].points_possible;
-                    learnerObj[Number(learnerSub.assignment_id)] = grade;
+                    learnerObj[learnerSub.assignment_id] = roundNum(grade);
+                    learnerObj.totalScore += score;
+                    learnerObj.totalPointsPossible += ag.assignments[aId].points_possible;
                 }
             }
         };
     }
 
-    calculateAvg(results[findLearnerObj(results, currentID)], ag.assignments, submissions.slice(startingIndex));
-
+    calculateAvgs(results);
     return results;
 }
 
-function calculateAvg(learnerObj, assignments, learnerSubmissions) {
-    if (typeof learnerObj == "object") {
-        const keys = Object.keys(learnerObj);
-        let totalGrade = 0;
-        let totalPointsPossible = 0;
-        for (let i = 0; i < keys.length; i++) {
-            const key = keys[i];
-            const assignmentIndex = findAssignment(assignments, Number(key));
-            if (key !== "id" && assignmentIndex != -1 && includeAssignment(assignments[assignmentIndex])) {
-                // Avg calc
+// Round to the nearest 3 digits if needed.
+function roundNum(number) {
+    const numAsStr = String(number);
+    if (numAsStr.includes(".")) {
+        const numAsArr = numAsStr.split(".");
+        if (numAsArr[1].length > 2) {
+            return Number(number.toFixed(3));
+        }
+    }
+    return number;
+}
 
-                totalPointsPossible += assignments[assignmentIndex].points_possible;
-                const isAssignmentLate = isLate(assignments[assignmentIndex], learnerSubmissions[i].submission.submitted_at);
-                // console.log(isAssignmentLate, assignments[assignmentIndex], learnerSubmissions[i].submission.submitted_at);
-                // 
-                totalGrade += (isAssignmentLate) ? (learnerSubmissions[i].submission.score - assignments[assignmentIndex].points_possible * 0.1) : learnerSubmissions[i].submission.score;
-            }
-        };
-        // console.log(totalGrade, totalPointsPossible);
-        learnerObj.avg = totalGrade / totalPointsPossible;
+// Calculate all averages for results
+function calculateAvgs(results) {
+    if (results) {
+        results.forEach(result => {
+            const average = result.totalScore / result.totalPointsPossible;
+            result.avg = roundNum(average);
+            delete result.totalScore;
+            delete result.totalPointsPossible;
+        })
     }
 }
 
@@ -155,9 +152,42 @@ function includeAssignment(assignment) {
     return (todaysDate > assignment.due_at);
 }
 
-function isProperDate(dateStr){
-    const dateArr = dateStr.split("-");
+// Ensure that the month is between 1 - 12 and that the day of month can exist.
+function isProperDate(dateStr) {
+    try {
+        if (!dateStr.includes("-")) {
+            throw "";
+        } else {
+            const dateArr = dateStr.split("-");
+            // Ex: ["2025", "09", "05"]
+            if (dateArr[0].length != 4) {
+                throw "Invalid year!";
+            } else if (dateArr[1].length != 2) {
+                throw "Invalid month format!";
+            } else if (dateArr[2].length != 2) {
+                throw "Invalid day format!";
+            }
+            const monthsArr = { "01": 31, "02": 29, "03": 31, "04": 30, "05": 31, "06": 30, "07": 31, "08": 31, "09": 30, "10": 31, "11": 31, "12": 31 };
+
+            for (const monthNum in monthsArr) {
+                if (dateArr[1] === monthNum) {
+                    if (monthsArr[monthNum] < Number(dateArr[2])){
+                        throw `Invalid day of ${dateArr[2]}! Month is ${monthNum}, so day must be between 01 and ${monthsArr[monthNum]}`;
+                    }
+                    return monthsArr[monthNum] >= Number(dateArr[2]);
+                }
+            }
+            throw `Invalid month of ${dateArr[1]}! Month must be between 01 and 12.`;
+        }
+
+    } catch (error) {
+        console.log(error);
+    }
+    return false;
 }
+
+console.log(isProperDate("2024-05-05"));
+console.log(isProperDate("2024-05-45"));
 
 // Returns the index of the assignment object with assignment_id = assignmentId
 function findAssignment(assignments, assignmentId) {
@@ -523,10 +553,10 @@ function validateLearnerSubmission(learnerSubmission) {
             // Validate the inner submission's details of the learner's submission
             try {
                 // Validate each assignment group's assigments array:
-                if (!validateInnerSubmission(learnerSubmission.submission)){
+                if (!validateInnerSubmission(learnerSubmission.submission)) {
                     throw errorMsgUnexpected("learner's submission details");
                 }
-                
+
             } catch (error) {
                 console.log(error);
             }
