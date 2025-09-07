@@ -80,7 +80,7 @@ function getLearnerData(course, ag, submissions) {
     const results = [];
     // Check if the course, assignment group, and submissions are valid
     if (validateCourse(course) && validateAssignments(ag, course.id) && validateSubmissions(submissions)) {
-        console.log("Everything is good!");
+        console.log("Course Info, Assignment Group, and Learner Submissions are all valid!");
         for (let i = 0; i < submissions.length; i++) {
             const learnerSub = submissions[i];
             // console.log(learnerSub);
@@ -89,8 +89,8 @@ function getLearnerData(course, ag, submissions) {
             if (learnerObjIndex === -1) { // If learnerObj does not exist, immediately initalize the first user
                 const learnerObj = {};
                 learnerObj.id = learnerSub.learner_id;
-                learnerObj.totalScore = 0;
-                learnerObj.totalPointsPossible = 0;
+                learnerObj.avg = 0; // Create avg to store total score
+                learnerObj.totalPoints = 0; // Temporary key value pair that stores total points of all assignments submitted by the learner (deleted in calculateAvgs function)
                 results.push(learnerObj);
                 learnerObjIndex = findLearnerObj(results, learnerSub.learner_id);
             }
@@ -99,13 +99,12 @@ function getLearnerData(course, ag, submissions) {
             if (!canBeChecked || aId < 0) continue; // Skip assignments that are not close to the due date.
 
             const learnerObj = results[learnerObjIndex];
-            const lateAssignment = isLate(ag.assignments[aId], learnerSub.submission.submitted_at);
+            const score = isLate(ag.assignments[aId], learnerSub.submission.submitted_at, learnerSub.submission.score);
             const pointsPossible = ag.assignments[aId].points_possible;
-            const score = (lateAssignment) ? (learnerSub.submission.score - (pointsPossible * 0.1)) : learnerSub.submission.score;
             const grade = score / pointsPossible;
             learnerObj[learnerSub.assignment_id] = roundNum(grade);
-            learnerObj.totalScore += score;
-            learnerObj.totalPointsPossible += pointsPossible;
+            learnerObj.avg += score;
+            learnerObj.totalPoints += pointsPossible;
         };
         calculateAvgs(results);
     }
@@ -127,22 +126,16 @@ function roundNum(number) {
 // Calculate all averages for results
 function calculateAvgs(results) {
     try {
-        const arrayErrorReason = validateArray("results", results);
-        if (arrayErrorReason) {
-            throw arrayErrorReason
-        }
+        validateArray("results", results);
         results.forEach(result => {
             try {
-                const objectErrorReason = validateObject("result", result);
-                if (objectErrorReason) {
-                    throw objectErrorReason;
-                } else if (result.totalScore === undefined || result.totalPointsPossible === undefined){
-                    throw "Cannot calculate average because the key totalScore or totalPointsPossible was not properly initialized.";
+                validateObject("result", result);
+                if (result.avg === undefined || result.totalPoints === undefined) {
+                    throw "Cannot calculate average because the key avg or totalPoints was not properly initialized.";
                 }
-                const average = result.totalScore / result.totalPointsPossible;
+                const average = result.avg / result.totalPoints;
                 result.avg = roundNum(average);
-                delete result.totalScore;
-                delete result.totalPointsPossible;
+                delete result.totalPoints;
             } catch (error) {
                 console.log(error);
             }
@@ -152,9 +145,15 @@ function calculateAvgs(results) {
     }
 }
 
-// Check if assignment is late
-function isLate(assignment, submissionDate) {
-    return submissionDate > assignment.due_at;
+// Check if assignment is late and updates score accordingly
+function isLate(assignment, submissionDate, score) {
+    if (score === 0){ // Do not check if assignment is late when score is 0
+        return score;
+    }
+    if (submissionDate > assignment.due_at){
+        return score - (assignment.points_possible * 0.1);
+    }
+    return score;
 }
 
 // Check if assignment is due yet
@@ -185,6 +184,27 @@ function findLearnerObj(resultsArray, learnerId) {
         }
     }
     return -1;
+}
+
+// Check if two result objects have equal values. When this function is called, it is a given that the objects have equal keys.
+function areResultObjsEqual(arrayName, result, expectedResult, resultName, index) {
+    for (key in result) {
+        const value = result[key];
+
+        // Validate the type of result's values
+        if (key == "id") {
+            validateId(resultName, value);
+        } else if (key == "avg") {
+            validateFloat(arrayName, value, "avg");
+        } else {
+            validateFloat(arrayName, value, `score of assignment with id ${key}`);
+        }
+
+        // Validate equality of result's and expectedResult's values
+        if (value != expectedResult[key]) {
+            throw `The ${resultName} with index ${index} and key ${key} from ${arrayName} has a value of ${value}. Expected value of ${expectedResult[key]}!`;
+        }
+    }
 }
 
 // Returns the error message for undefined variables. If objectName is only provided, it is treated as the variable name.
@@ -222,8 +242,8 @@ function errorMsgWrongObjectType(objectName, variableName = "", expectedType) {
 }
 
 // Returns the error message when the variable's value is lower than the lower bound.
-function errorMsgInvalidNumberValue(objectName, variableName, variable, additionalReason = "", lowerBound = 1) {
-    return `The ${variableName} of ${objectName} is ${variable} and cannot be less than ${lowerBound}!` + `${(additionalReason) ? (" " + additionalReason) : ""}`;
+function errorMsgInvalidNumberValue(objectName, variableName, variable, additionalReason = "", lowerBound = 1, comparisonType = "less than") {
+    return `The ${variableName} of ${objectName} is ${variable} and cannot be ${comparisonType} ${lowerBound}!` + `${(additionalReason) ? (" " + additionalReason) : ""}`;
 }
 
 // Returns the error message when the variable is a decimal/float value when it shouldn't be.
@@ -244,77 +264,85 @@ function errorMsgUnequalKeys(objectName, reason) {
 }
 
 // Checks if keys are equal to expected keys and gives a reason if they are not equal (reason is relative to keys).
-function validateKeys(keys, expectedKeys) {
+function validateKeys(objectName, keys, expectedKeys) {
     if (keys === undefined) {
-        return "is undefined.";
+        throw errorMsgUnequalKeys(objectName, "is undefined.");
     } else if (keys.length > expectedKeys.length) {
-        return "has extra keys.";
+        throw errorMsgUnequalKeys(objectName, "has extra keys.");
     } else if (keys.length < expectedKeys.length) {
-        return "is missing keys.";
+        throw errorMsgUnequalKeys(objectName, "is missing keys.");
     } else {
         for (let i = 0; i < keys.length; i++) {
-            if (keys[i] != expectedKeys[i]) return `has the key ${keys[i]} instead of ${expectedKeys[i]}.`;
+            if (keys[i] != expectedKeys[i]) throw errorMsgUnequalKeys(objectName, `has the key ${keys[i]} instead of ${expectedKeys[i]}.`);
         }
     }
-    return "";
 }
 
 // Validation for id
 function validateId(objectName, id, variableName = "id") {
     if (id === undefined) {
-        return errorMsgUndefined(objectName, variableName);
+        throw errorMsgUndefined(objectName, variableName);
     } else if (typeof id != "number") {
-        return errorMsgWrongPrimitiveType(objectName, variableName, typeof id, "number");
+        throw errorMsgWrongPrimitiveType(objectName, variableName, typeof id, "number");
     } else if (id < 1) {
-        return errorMsgInvalidNumberValue(objectName, variableName, id);
+        throw errorMsgInvalidNumberValue(objectName, variableName, id);
     } else if (id % 1) {
-        return errorMsgFloatValue(objectName, variableName, id);
+        throw errorMsgFloatValue(objectName, variableName, id);
     }
-    return "";
 }
 
 // Validation for name
 function validateName(objectName, name, variableName = "name") {
     if (name === undefined) {
-        return errorMsgUndefined(objectName, variableName);
+        throw errorMsgUndefined(objectName, variableName);
     } else if (typeof name != "string") {
-        return errorMsgWrongPrimitiveType(objectName, variableName, typeof name, "string");
+        throw errorMsgWrongPrimitiveType(objectName, variableName, typeof name, "string");
     } else if (name === "") {
-        return `The ${variableName} of the ${objectName} cannot be an empty string!`;
+        throw `The ${variableName} of the ${objectName} cannot be an empty string!`;
     }
-    return "";
+}
+
+// Validate float numbers
+function validateFloat(objectName, floatNum, variableName) {
+    if (floatNum === undefined) {
+        throw errorMsgUndefined(objectName, variableName);
+    } else if (typeof floatNum != "number") {
+        throw errorMsgWrongPrimitiveType(objectName, variableName, typeof floatNum, "number");
+    } else if (floatNum < 0) {
+        throw errorMsgInvalidNumberValue(objectName, variableName, floatNum, 0);
+    }
 }
 
 // Ensure that the month is between 1 - 12 and that the day of month can exist.
 function validateDate(objectName, date, variableName) {
     if (date === undefined) {
-        return errorMsgUndefined(objectName, variableName);
+        throw errorMsgUndefined(objectName, variableName);
     } else if (typeof date != "string") {
-        return errorMsgWrongPrimitiveType(objectName, variableName, typeof date, "string");
+        throw errorMsgWrongPrimitiveType(objectName, variableName, typeof date, "string");
     } else if (date === "") {
-        return `The ${variableName} for the ${objectName} cannot be an empty string!`;
+        throw `The ${variableName} for the ${objectName} cannot be an empty string!`;
     } else if (!date.includes("-")) {
-        return `The ${variableName} for the ${objectName} is missing '-'!`;
+        throw `The ${variableName} for the ${objectName} is missing '-'!`;
     } else {
         const dateArr = date.split("-");
         // Ex: ["2025", "09", "05"]
         if (dateArr.length < 3) {
-            return `The ${variableName} for the ${objectName} is missing month, day, or year!`;
+            throw `The ${variableName} for the ${objectName} is missing month, day, or year!`;
         } else if (dateArr.length > 3) {
-            return `The ${variableName} for the ${objectName} has too many '-'!`;
+            throw `The ${variableName} for the ${objectName} has too many '-'!`;
         } else if (dateArr[0].length != 4) {
-            return `The ${variableName} for the ${objectName} has an invalid year format! Year must be four characters.`;
+            throw `The ${variableName} for the ${objectName} has an invalid year format! Year must be four characters.`;
         } else if (dateArr[1].length != 2) {
-            return `The ${variableName} for the ${objectName} has an invalid month format! Month must be two characters.`;
+            throw `The ${variableName} for the ${objectName} has an invalid month format! Month must be two characters.`;
         } else if (dateArr[2].length != 2) {
-            return `The ${variableName} for the ${objectName} has an invalid day format! Day must be two characters.`;
+            throw `The ${variableName} for the ${objectName} has an invalid day format! Day must be two characters.`;
         } else {
             const monthsObj = { "01": 31, "02": 29, "03": 31, "04": 30, "05": 31, "06": 30, "07": 31, "08": 31, "09": 30, "10": 31, "11": 31, "12": 31 };
-
-            if (monthsObj[dateArr[1]]) { // Check if month exists in monthsObj
-                return (monthsObj[dateArr[1]] >= Number(dateArr[2])) ? "" : `The ${variableName} for the ${objectName} has an invalid day of ${dateArr[2]}! Month is ${monthNum}, so day must be between 01 and ${monthsArr[monthNum]}.`;
+            if (monthsObj[dateArr[1]] === undefined) { // Check if month exists
+                throw `The ${variableName} for the ${objectName} has an invalid month of ${dateArr[1]}! Month must be between 01 and 12.`;
+            } else if (monthsObj[dateArr[1]] < Number(dateArr[2])) { // Check if day is valid
+                throw `The ${variableName} for the ${objectName} has an invalid day of ${dateArr[2]}! Month is ${dateArr[1]}, so day must be between 01 and ${monthsArr[dateArr[1]]}.`;
             }
-            return `The ${variableName} for the ${objectName} has an invalid month of ${dateArr[1]}! Month must be between 01 and 12.`;
         }
     }
 }
@@ -322,27 +350,25 @@ function validateDate(objectName, date, variableName) {
 // Validates that an array provided is an Array and isn't empty
 function validateArray(objectName, array, arrayName = "") {
     if (array === undefined) {
-        return errorMsgUndefined(objectName, arrayName);
+        throw errorMsgUndefined(objectName, arrayName);
     } else if (typeof array != "object") {
-        return errorMsgWrongPrimitiveType(objectName, arrayName, typeof array, "object");
+        throw errorMsgWrongPrimitiveType(objectName, arrayName, typeof array, "object");
     } else if (!(array instanceof Array)) {
-        return errorMsgWrongObjectType(objectName, arrayName, "Array");
+        throw errorMsgWrongObjectType(objectName, arrayName, "Array");
     } else if (array.length === 0) {
-        return errorMsgEmpty(objectName, arrayName);
+        throw errorMsgEmpty(objectName, arrayName);
     }
-    return "";
 }
 
 // Validates that an object provided is an Object and isn't empty
 function validateObject(objectName, object) {
     if (object === undefined) {
-        return errorMsgUndefined(objectName);
+        throw errorMsgUndefined(objectName);
     } else if (typeof object != "object") {
-        return errorMsgWrongPrimitiveType(objectName, "", typeof object, "object");
+        throw errorMsgWrongPrimitiveType(objectName, "", typeof object, "object");
     } else if (Object.keys(object).length === 0) {
-        return errorMsgEmpty(objectName);
+        throw errorMsgEmpty(objectName);
     }
-    return "";
 }
 
 // Validates the information of the course provided by checking object structure, variable types, 
@@ -350,27 +376,18 @@ function validateCourse(course) {
     const objectName = "course";
     try {
         // Validate that course is an object
-        const objectErrorReason = validateObject(objectName, course);
-        if (objectErrorReason) {
-            throw objectErrorReason;
-        }
+        validateObject(objectName, course);
 
         // Validate that the keys are properly named and that none of them are missing.
         const courseKeys = ["id", "name"];
-        const keysErrorReason = validateKeys(Object.keys(course), courseKeys);
-        if (keysErrorReason) {
-            throw errorMsgUnequalKeys(objectName, keysErrorReason);
-        }
+        validateKeys(objectName, Object.keys(course), courseKeys);
 
         // Validate values by accessing the keys of the object
-        const hasErrors = false; // Keep track of any errors from any key's value
+        let hasErrors = false; // Keep track of any errors from any key's value
 
         // Validate course group's id
         try {
-            const idErrorReason = validateId(objectName, course.id);
-            if (idErrorReason) {
-                throw idErrorReason;
-            }
+            validateId(objectName, course.id);
         } catch (error) {
             console.log(error);
             hasErrors = true;
@@ -378,10 +395,7 @@ function validateCourse(course) {
 
         // Validate course group's name
         try {
-            const nameErrorReason = validateName(objectName, course.name);
-            if (nameErrorReason) {
-                throw nameErrorReason;
-            }
+            validateName(objectName, course.name);
         } catch (error) {
             console.log(error);
             hasErrors = true;
@@ -398,27 +412,18 @@ function validateAssignments(assignmentGroup, courseId) {
     const objectName = "assignment group";
     try {
         // Validate that assignmentGroup is an object
-        const objectErrorReason = validateObject(objectName, assignmentGroup);
-        if (objectErrorReason) {
-            throw objectErrorReason;
-        }
+        validateObject(objectName, assignmentGroup);
 
         // Validate that the keys are properly named and that none of them are missing.
         const assignmentGroupKeys = ["id", "name", "course_id", "group_weight", "assignments"];
-        const keysErrorReason = validateKeys(Object.keys(assignmentGroup), assignmentGroupKeys);
-        if (keysErrorReason) {
-            throw errorMsgUnequalKeys(objectName, keysErrorReason);
-        }
+        validateKeys(objectName, Object.keys(assignmentGroup), assignmentGroupKeys);
 
         // Validate values by accessing the keys of the object
-        const hasErrors = false; // Keep track of any errors from any key's value
+        let hasErrors = false; // Keep track of any errors from any key's value
 
         // Validate assignment group's id
         try {
-            const idErrorReason = validateId(objectName, assignmentGroup.id);
-            if (idErrorReason) {
-                throw idErrorReason;
-            }
+            validateId(objectName, assignmentGroup.id);
         } catch (error) {
             console.log(error);
             hasErrors = true;
@@ -426,10 +431,7 @@ function validateAssignments(assignmentGroup, courseId) {
 
         // Validate assignment group's name
         try {
-            const nameErrorReason = validateName(objectName, assignmentGroup.name);
-            if (nameErrorReason) {
-                throw nameErrorReason;
-            }
+            validateName(objectName, assignmentGroup.name);
         } catch (error) {
             console.log(error);
             hasErrors = true;
@@ -437,10 +439,8 @@ function validateAssignments(assignmentGroup, courseId) {
 
         // Validate assignment group's course id
         try {
-            const courseIdErrorReason = validateId(objectName, assignmentGroup.course_id, "course id");
-            if (courseIdErrorReason) {
-                throw courseIdErrorReason;
-            } else if (assignmentGroup.course_id != courseId) {
+            validateId(objectName, assignmentGroup.course_id, "course id");
+            if (assignmentGroup.course_id != courseId) {
                 throw errorMsgUnequalIds(objectName, "course id", "the course");
             }
         } catch (error) {
@@ -466,10 +466,7 @@ function validateAssignments(assignmentGroup, courseId) {
 
         // Validate assignment group's assignments array
         try {
-            const arrayErrorReason = validateArray(objectName, assignmentGroup.assignments, "assignments");
-            if (arrayErrorReason) {
-                throw arrayErrorReason;
-            }
+            validateArray(objectName, assignmentGroup.assignments, "assignments");
 
             // Validate each individual assignment from the assignment group's assignments array
             assignmentGroup.assignments.forEach(assignment => {
@@ -498,27 +495,18 @@ function validateAssignment(assignment) {
     const objectName = "assignment";
     try {
         // Validate that assignment is an object
-        const objectErrorReason = validateObject(objectName, assignment);
-        if (objectErrorReason) {
-            throw objectErrorReason;
-        }
+        validateObject(objectName, assignment);
 
         // Validate that the keys are properly named and that none of them are missing.
         const assignmentKeys = ["id", "name", "due_at", "points_possible"];
-        const keysErrorReason = validateKeys(Object.keys(assignment), assignmentKeys);
-        if (keysErrorReason) {
-            throw (errorMsgUnequalKeys(objectName, keysErrorReason));
-        };
+        validateKeys(objectName, Object.keys(assignment), assignmentKeys);
 
         // Validate values by accessing the keys of the object
-        const hasErrors = false; // Keep track of any errors from any key's value
+        let hasErrors = false; // Keep track of any errors from any key's value
 
         // Validate assignment's id
         try {
-            const idErrorReason = validateId(objectName, assignment.id);
-            if (idErrorReason) {
-                throw idErrorReason;
-            }
+            validateId(objectName, assignment.id);
         } catch (error) {
             console.log(error);
             hasErrors = true;
@@ -526,10 +514,7 @@ function validateAssignment(assignment) {
 
         // Validate assignment's name
         try {
-            const nameErrorReason = validateName(objectName, assignment.name);
-            if (nameErrorReason) {
-                throw nameErrorReason;
-            }
+            validateName(objectName, assignment.name);
         } catch (error) {
             console.log(error);
             hasErrors = true;
@@ -537,10 +522,7 @@ function validateAssignment(assignment) {
 
         // Validate assignment's due date
         try {
-            const dateErrorReason = validateDate(objectName, assignment.due_at, "due date");
-            if (dateErrorReason) {
-                throw dateErrorReason;
-            }
+            validateDate(objectName, assignment.due_at, "due date");
         } catch (error) {
             console.log(error);
             hasErrors = true;
@@ -552,10 +534,10 @@ function validateAssignment(assignment) {
                 throw (errorMsgUndefined(objectName, "points possible"));
             } else if (typeof assignment.points_possible != "number") {
                 throw (errorMsgWrongPrimitiveType(objectName, "points possible", typeof assignment.points_possible, "number"));
-            } else if (assignment.points_possible < 1) {
-                throw (errorMsgInvalidNumberValue(objectName, "points possible", assignment.points_possible, "Cannot divide by 0!"));
-            } else if (assignment.points_possible % 1) {
-                throw (errorMsgFloatValue(objectName, "points possible", assignment.points_possible));
+            } else if (assignment.points_possible < 0) {
+                throw (errorMsgInvalidNumberValue(objectName, "points possible", assignment.points_possible, "Cannot divide be negative!"));
+            } else if (assignment.points_possible === 0) {
+                throw (errorMsgInvalidNumberValue(objectName, "points possible", assignment.points_possible, "Cannot divide by 0!", "equals to"));
             }
         } catch (error) {
             console.log(error);
@@ -573,13 +555,10 @@ function validateSubmissions(submissions) {
     const objectName = "learners' submissions";
     try {
         // Validate that submissions is an array
-        const arrayErrorReason = validateArray(objectName, submissions, "");
-        if (arrayErrorReason) {
-            throw arrayErrorReason;
-        }
+        validateArray(objectName, submissions, "");
 
         // Validate each individual submission from the submissions array
-        const hasErrors = false;
+        let hasErrors = false;
 
         submissions.forEach(learnerSubmission => {
             try {
@@ -603,27 +582,18 @@ function validateLearnerSubmission(learnerSubmission) {
     const objectName = "learner's submission";
     try {
         // Validate that learnerSubmission is an object
-        const objectErrorReason = validateObject(objectName, learnerSubmission);
-        if (objectErrorReason) {
-            throw objectErrorReason;
-        }
+        validateObject(objectName, learnerSubmission);
 
         // Validate that the keys are properly named and that none of them are missing.
         const learnerSubmissionKeys = ["learner_id", "assignment_id", "submission"];
-        const keysErrorReason = validateKeys(Object.keys(learnerSubmission), learnerSubmissionKeys);
-        if (keysErrorReason) {
-            throw (errorMsgUnequalKeys(objectName, keysErrorReason));
-        }
+        validateKeys(objectName, Object.keys(learnerSubmission), learnerSubmissionKeys);
 
         // Validate values by accessing the keys of the object
-        const hasErrors = false; // Keep track of any errors from any key's value
+        let hasErrors = false; // Keep track of any errors from any key's value
 
         // Validate the learner id of the learner's submission
         try {
-            const idErrorReason = validateId(objectName, learnerSubmission.learner_id, "learner id");
-            if (idErrorReason) {
-                throw idErrorReason;
-            }
+            validateId(objectName, learnerSubmission.learner_id, "learner id");
         } catch (error) {
             console.log(error);
             hasErrors = true;
@@ -631,10 +601,7 @@ function validateLearnerSubmission(learnerSubmission) {
 
         // Validate the assignment id of the learner's submission
         try {
-            const idErrorReason = validateId(objectName, learnerSubmission.assignment_id, "assignment id");
-            if (idErrorReason) {
-                throw idErrorReason;
-            }
+            validateId(objectName, learnerSubmission.assignment_id, "assignment id");
         } catch (error) {
             console.log(error);
             hasErrors = true;
@@ -663,26 +630,18 @@ function validateInnerSubmission(submissionDetails) {
     const objectName = "submission's details";
     try {
         // Validate that submissionDetails is an object
-        const objectErrorReason = validateObject(objectName, submissionDetails);
-        if (objectErrorReason) {
-            throw objectErrorReason;
-        }
+        validateObject(objectName, submissionDetails);
+
         // Validate that the keys are properly named and that none of them are missing.
         const submissionDetailsKeys = ["submitted_at", "score"];
-        const keysErrorReason = validateKeys(Object.keys(submissionDetails), submissionDetailsKeys);
-        if (keysErrorReason) {
-            throw errorMsgUnequalKeys(objectName, keysErrorReason);
-        }
+        validateKeys(objectName, Object.keys(submissionDetails), submissionDetailsKeys);
 
         // Validate values by accessing the keys of the object
-        const hasErrors = false; // Keep track of any errors from any key's value
+        let hasErrors = false; // Keep track of any errors from any key's value
 
         // Validate the time of the learner's submission (submitted_at)
         try {
-            const dateErrorReason = validateDate(objectName, submissionDetails.submitted_at, "date submitted");
-            if (dateErrorReason) {
-                throw dateErrorReason;
-            }
+            validateDate(objectName, submissionDetails.submitted_at, "date submitted");
         } catch (error) {
             console.log(error);
             hasErrors = true;
@@ -708,11 +667,48 @@ function validateInnerSubmission(submissionDetails) {
     }
 }
 
-function validateResults(result, expectedResult) {
-    const resultKeys = Object.keys(result[0]);
-    const expectedResultKeys = Object.keys(expectedResult[0]);
-    return validateKeys(resultKeys, expectedResultKeys) === "";
+// Validate results (output) to the expected results
+function validateResults(results, expectedResults) {
+    const arrayName = "generated results";
+    let hasErrors = false;
+    try {
+        // Validate that generated results is an array
+        validateArray(arrayName, results);
+
+        // Validate that generated results has the same number of elements as expected results
+        if (results.length > expectedResult.length) {
+            throw `The length of the ${arrayName} is longer than expected! Extra learner objects detected.`;
+        } else if (results.length < expectedResult.length) {
+            throw `The length of the ${arrayName} is shorter than expected! Missing learner objects.`;
+        }
+
+        // Validate that each element (learner object) in the array is an object with the proper keys
+        const innerObjName = "learner object";
+        for (let i = 0; i < results.length; i++) {
+            try {
+                validateObject(innerObjName, results[i]);
+
+                // Validate that the result has the proper keys
+                const resultKeys = Object.keys(results[i]);
+                const expectedResultKeys = Object.keys(expectedResults[i]);
+                validateKeys(arrayName, resultKeys, expectedResultKeys);
+
+                // Validate the values of the keys
+                areResultObjsEqual(arrayName, result[i], expectedResults[i], innerObjName, i);
+            } catch (error) {
+                console.log(error);
+                hasErrors = true;
+            }
+        };
+
+    } catch (error) {
+        console.log(error);
+        hasErrors = true;
+    }
+    console.log(`Results and expected results are ${(hasErrors) ? "not equal!" : "equal!"}`);
 }
+
+// TO DO: Checks for unique assignment id in ag.assignments array, unique submission (learner_id, assignment_id pair must be unique), try feeding data with errors
 
 // Tests
 const expectedResult = [
@@ -730,8 +726,34 @@ const expectedResult = [
     }
 ];
 
+const wrongCourseIdAG = {
+    id: 12345,
+    name: "Fundamentals of JavaScript",
+    course_id: 45,
+    group_weight: 25,
+    assignments: [
+        {
+            id: 1,
+            name: "Declare a Variable",
+            due_at: "2023-01-25",
+            points_possible: 50
+        },
+        {
+            id: 2,
+            name: "Write a Function",
+            due_at: "2023-02-27",
+            points_possible: 150
+        },
+        {
+            id: 3,
+            name: "Code the World",
+            due_at: "3156-11-15",
+            points_possible: 500
+        }
+    ]
+};
+
 const result = getLearnerData(CourseInfo, AssignmentGroup, LearnerSubmissions);
+validateResults(result, expectedResult);
 
-console.log(result);
-
-console.log(validateResults(result, expectedResult));
+const wrongCourseIdAgResults = getLearnerData(CourseInfo, wrongCourseIdAG, LearnerSubmissions);
