@@ -1,6 +1,4 @@
 // The provided course information.
-const todaysDate = "2025-09-05";
-
 const CourseInfo = {
     id: 451,
     name: "Introduction to JavaScript"
@@ -151,44 +149,40 @@ function isLate(assignment, submissionDate) {
 
 // Check if assignment is due yet
 function includeAssignment(assignment) {
+    const todaysDate = "2025-09-05";
     return (todaysDate > assignment.due_at);
 }
 
 // Ensure that the month is between 1 - 12 and that the day of month can exist.
-function isProperDate(dateStr) {
-    try {
-        if (!dateStr.includes("-")) {
-            throw "";
+function validateDate(dateStr) {
+    if (!dateStr.includes("-")) {
+        return "Invalid date! Missing '-'!";
+    } else {
+        const dateArr = dateStr.split("-");
+        // Ex: ["2025", "09", "05"]
+        if (dateArr.length != 3) {
+            return "Invalid date! Missing month, day, or year!";
+        } else if (dateArr[0].length != 4) {
+            return "Invalid year!";
+        } else if (dateArr[1].length != 2) {
+            return "Invalid month format! Month must be two characters.";
+        } else if (dateArr[2].length != 2) {
+            return "Invalid day format! Day must be two characters.";
         } else {
-            const dateArr = dateStr.split("-");
-            // Ex: ["2025", "09", "05"]
-            if (dateArr.length != 3) {
-                throw "Invalid date! Missing month, day, or year!";
-            } else if (dateArr[0].length != 4) {
-                throw "Invalid year!";
-            } else if (dateArr[1].length != 2) {
-                throw "Invalid month format!";
-            } else if (dateArr[2].length != 2) {
-                throw "Invalid day format!";
-            } else {
-                const monthsArr = { "01": 31, "02": 29, "03": 31, "04": 30, "05": 31, "06": 30, "07": 31, "08": 31, "09": 30, "10": 31, "11": 31, "12": 31 };
+            const monthsArr = { "01": 31, "02": 29, "03": 31, "04": 30, "05": 31, "06": 30, "07": 31, "08": 31, "09": 30, "10": 31, "11": 31, "12": 31 };
 
-                for (const monthNum in monthsArr) {
-                    if (dateArr[1] === monthNum) {
-                        if (monthsArr[monthNum] < Number(dateArr[2])) {
-                            throw `Invalid day of ${dateArr[2]}! Month is ${monthNum}, so day must be between 01 and ${monthsArr[monthNum]}`;
-                        }
-                        return monthsArr[monthNum] >= Number(dateArr[2]);
+            for (const monthNum in monthsArr) {
+                if (dateArr[1] === monthNum) {
+                    if (monthsArr[monthNum] < Number(dateArr[2])) {
+                        return `Invalid day of ${dateArr[2]}! Month is ${monthNum}, so day must be between 01 and ${monthsArr[monthNum]}.`;
+                    } else { // Return empty string if day in dateStr is reasonable.
+                        return "";
                     }
                 }
-                throw `Invalid month of ${dateArr[1]}! Month must be between 01 and 12.`;
             }
+            return `Invalid month of ${dateArr[1]}! Month must be between 01 and 12.`;
         }
-
-    } catch (error) {
-        console.log(error);
     }
-    return false;
 }
 
 // Returns the index of the assignment object with assignment_id = assignmentId
@@ -272,6 +266,28 @@ function validateKeys(keys, expectedKeys) {
     return "";
 }
 
+function validateId(category, id){
+    if (id === undefined) {
+        return errorMsgUndefined(category, "id");
+    } else if (typeof id != "number") {
+        return errorMsgWrongType(category, "id", typeof id, "number");
+    } else if (id < 1) {
+        return errorMsgInvalidNumberValue(category, "id", id);
+    } else if (id % 1) {
+        return errorMsgFloatValue(category, "id", id);
+    }
+    return "";
+}
+
+function validateName(category, name){
+    if (name === undefined) {
+        return errorMsgUndefined(category, "name");
+    } else if (typeof name != "string") {
+        return errorMsgWrongType(category, "name", typeof name, "string");
+    }
+    return "";
+}
+
 // Validates the information of the course provided by checking object structure, variable types, 
 function validateCourse(course) {
     const category = "course";
@@ -285,9 +301,9 @@ function validateCourse(course) {
             // Validate that the keys are properly named and that none of them are missing.
             try {
                 const courseKeys = ["id", "name"];
-                const reason = validateKeys(Object.keys(course), courseKeys);
-                if (reason) {
-                    throw (errorMsgUnequalKeys(category, reason));
+                const errorReason = validateKeys(Object.keys(course), courseKeys);
+                if (errorReason) {
+                    throw (errorMsgUnequalKeys(category, errorReason));
                 };
             } catch (error) {
                 console.log(error);
@@ -296,15 +312,8 @@ function validateCourse(course) {
 
             // Validate course group's id
             try {
-                if (course.id === undefined) {
-                    throw (errorMsgUndefined(category, "id"));
-                } else if (typeof course.id != "number") {
-                    throw (errorMsgWrongType(category, "id", typeof course.id, "number"));
-                } else if (course.id < 1) {
-                    throw (errorMsgInvalidNumberValue(category, "id", course.id));
-                } else if (course.id % 1) {
-                    throw (errorMsgFloatValue(category, "id", course.id));
-                }
+                const idErrorReason = validateId(category, course.id);
+                if (idErrorReason) throw idErrorReason;
             } catch (error) {
                 console.log(error);
                 hasErrors = true;
@@ -312,11 +321,8 @@ function validateCourse(course) {
 
             // Validate course group's name
             try {
-                if (course.name === undefined) {
-                    throw (errorMsgUndefined(category, "name"));
-                } else if (typeof course.name != "string") {
-                    throw (errorMsgWrongType(category, "name", typeof course.name, "string"));
-                }
+                const nameErrorReason = validateName(category, course.name);
+                if (nameErrorReason) throw nameErrorReason;
             } catch (error) {
                 console.log(error);
                 hasErrors = true;
@@ -343,9 +349,9 @@ function validateAssignments(assignmentGroup, courseId) {
             // Validate that the keys are properly named and that none of them are missing.
             try {
                 const assignmentGroupKeys = ["id", "name", "course_id", "group_weight", "assignments"];
-                const reason = validateKeys(Object.keys(assignmentGroup), assignmentGroupKeys);
-                if (reason) {
-                    throw (errorMsgUnequalKeys(category, reason));
+                const errorReason = validateKeys(Object.keys(assignmentGroup), assignmentGroupKeys);
+                if (errorReason) {
+                    throw (errorMsgUnequalKeys(category, errorReason));
                 };
             } catch (error) {
                 console.log(error);
@@ -447,9 +453,9 @@ function validateAssignment(assignment) {
             // Validate that the keys are properly named and that none of them are missing.
             try {
                 const assignmentKeys = ["id", "name", "due_at", "points_possible"];
-                const reason = validateKeys(Object.keys(assignment), assignmentKeys);
-                if (reason) {
-                    throw (errorMsgUnequalKeys(category, reason));
+                const errorReason = validateKeys(Object.keys(assignment), assignmentKeys);
+                if (errorReason) {
+                    throw (errorMsgUnequalKeys(category, errorReason));
                 };
             } catch (error) {
                 console.log(error);
@@ -490,8 +496,11 @@ function validateAssignment(assignment) {
                     throw (errorMsgUndefined(category, "due date"));
                 } else if (typeof assignment.due_at != "string") {
                     throw (errorMsgWrongType(category, "due date", typeof assignment.due_at, "string"));
-                } else if (!isProperDate(assignment.due_at)) {
-                    throw `The due date of the assignment is invalid!`;
+                } else {
+                    const errorReason = validateDate(assignment.due_at);
+                    if(errorReason){
+                        throw `The ${category}'s due date is invalid! ${errorReason}`;
+                    }
                 }
             } catch (error) {
                 console.log(error);
@@ -565,9 +574,9 @@ function validateLearnerSubmission(learnerSubmission) {
             // Validate that the keys are properly named and that none of them are missing.
             try {
                 const learnerSubmissionKeys = ["learner_id", "assignment_id", "submission"];
-                const reason = validateKeys(Object.keys(learnerSubmission), learnerSubmissionKeys);
-                if (reason) {
-                    throw (errorMsgUnequalKeys(category, reason));
+                const errorReason = validateKeys(Object.keys(learnerSubmission), learnerSubmissionKeys);
+                if (errorReason) {
+                    throw (errorMsgUnequalKeys(category, errorReason));
                 };
             } catch (error) {
                 console.log(error);
@@ -638,9 +647,9 @@ function validateInnerSubmission(submissionDetails) {
             // Validate that the keys are properly named and that none of them are missing.
             try {
                 const submissionDetailsKeys = ["submitted_at", "score"];
-                const reason = validateKeys(Object.keys(submissionDetails), submissionDetailsKeys);
-                if (reason) {
-                    throw (errorMsgUnequalKeys(category, reason));
+                const errorReason = validateKeys(Object.keys(submissionDetails), submissionDetailsKeys);
+                if (errorReason) {
+                    throw (errorMsgUnequalKeys(category, errorReason));
                 };
             } catch (error) {
                 console.log(error);
@@ -653,8 +662,11 @@ function validateInnerSubmission(submissionDetails) {
                     throw (errorMsgUndefined(category, "submitted at"));
                 } else if (typeof submissionDetails.submitted_at != "string") {
                     throw (errorMsgWrongType(category, "submitted at", typeof submissionDetails.submitted_at, "string"));
-                } else if (!isProperDate(submissionDetails.submitted_at)) {
-                    throw `The date that the submission was submitted at is invalid!`;
+                } else {
+                    const errorReason = validateDate(submissionDetails.submitted_at);
+                    if(errorReason){
+                        throw `The date submitted for the ${category}'s is invalid! ${errorReason}`;
+                    }
                 }
             } catch (error) {
                 console.log(error);
