@@ -40,7 +40,6 @@ This is a description of all objects and expected key-value behaviors. The objec
 </td>
 <td>The id attribute must be an integer greater than 1. The name attribute must be a non-empty string.</td>
 </tr>
-
 <tr>
 <td>Assignments</td> <td>Object</td>
 <td>
@@ -52,18 +51,6 @@ This is a description of all objects and expected key-value behaviors. The objec
         name: "Declare a Variable",
         due_at: "2023-01-25",
         points_possible: 50
-    },
-    {
-        id: 2,
-        name: "Write a Function",
-        due_at: "2023-02-27",
-        points_possible: 150
-    },
-    {
-        id: 3,
-        name: "Code the World",
-        due_at: "3156-11-15",
-        points_possible: 500
     }
 ]
 ```
@@ -71,7 +58,26 @@ This is a description of all objects and expected key-value behaviors. The objec
 </td>
 <td>The id attribute must be an integer greater than 1. The name attribute must be a non-empty string.</td>
 </tr>
+<tr>
+<td>Learner Submissions</td> <td>Array</td>
+<td>
 
+```javascript
+[
+    {
+        learner_id: 125,
+        assignment_id: 1,
+        submission: {
+            submitted_at: "2023-01-25",
+            score: 47
+        }
+    }
+]
+```
+
+</td>
+<td>The id attribute must be an integer greater than 1. The name attribute must be a non-empty string.</td>
+</tr>
 </table>
 
 ## Description of Functions

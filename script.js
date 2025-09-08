@@ -541,7 +541,6 @@ function validateAssignments(assignmentGroup, courseId) {
 // Validate the individual assignment object
 function validateAssignment(outerObjectName, assignment, index) {
     const objectName = "assignment";
-    const customStmt = `The ${objectName} of id ${assignment.id} from the ${outerObjectName}'s assignments array with index ${index} is invalid!\n`;
     const assignmentErrors = [];
     try {
         // Validate that assignment is an object
@@ -550,7 +549,7 @@ function validateAssignment(outerObjectName, assignment, index) {
         // Validate that the keys are properly named and that none of them are missing.
         const assignmentKeys = ["id", "name", "due_at", "points_possible"];
 
-        validateKeys(objectName, Object.keys(assignment), assignmentKeys, customStmt);
+        validateKeys(objectName, Object.keys(assignment), assignmentKeys);
     } catch (error) {
         assignmentErrors.push(error);
     }
