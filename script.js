@@ -83,7 +83,7 @@ function getLearnerData(course, ag, submissions) {
     try {
         // Will throw an error if the course object is invalid. This is good because an invalid course id would mess up the assignments validation.
         validateCourse(course);
-        
+
         // Will throw an error if the assignment group object is invalid. This is good because an invalid assignments array from the assignment group would mess up the submissions validation.
         validateAssignments(ag, course.id);
 
@@ -213,23 +213,34 @@ function findLearnerSubmission(objArr, learnerId, assignmentId) {
 }
 
 // Check if two result objects have equal values. When this function is called, it is a given that the objects have equal keys.
-function areResultObjsEqual(arrayName, result, expectedResult, resultName, index) {
-    for (key in result) {
-        const value = result[key];
+function areResultObjsEqual(arrayName, resultObj, expectedResult, resultName, index) {
+    const valueErrors = [];
+    for (key in resultObj) {
+        const value = resultObj[key];
 
         // Validate the type of result's values
-        if (key == "id") {
-            validateId(resultName, value);
-        } else if (key == "avg") {
-            validateFloat(arrayName, value, "avg");
-        } else {
-            validateFloat(arrayName, value, `score of assignment with id ${key}`);
+        try {
+            if (key == "id") {
+                validateId(resultName, value);
+            } else if (key == "avg") {
+                validateFloat(resultName, value, "avg");
+            } else {
+                validateFloat(resultName, value, `score of assignment with id ${key}`);
+            }
+        } catch (error) {
+            valueErrors.push(error);
         }
 
         // Validate equality of result's and expectedResult's values
         if (value != expectedResult[key]) {
-            throw `The ${resultName} with index ${index} and key ${key} from ${arrayName} has a value of ${value}. Expected value of ${expectedResult[key]}!`;
+            valueErrors.push(`The ${resultName} with index ${index} and key ${key} from ${arrayName} has a value of ${value}. Expected value of ${expectedResult[key]}!`);
+        } else if (typeof value != typeof expectedResult[key]) {
+            valueErrors.push(`The value of ${resultName} with key [${key}] with index ${index} from ${arrayName} is type ${typeof value} instead of ${typeof expectedResult[key]}!`);
         }
+    }
+
+    if (valueErrors.length > 0){
+        throw valueErrors.join("\n");
     }
 }
 
@@ -286,12 +297,16 @@ function errorMsgUnequalIds(objectName1, id1, objectName2, id2, idName) {
 function errorMsgUnequalKeys(objectName, reason) {
     const vowels = ["a", "e", "i", "o", "u"];
     const aWord = vowels.includes(objectName[0]) ? "an" : "a";
-    return `The keys for the ${objectName} provided and expected keys for ${aWord} ${objectName} are different. This ${objectName} ${reason}`;
+    return `The keys for the ${objectName} provided and expected keys for ${aWord} ${objectName} are different. The ${objectName} ${reason}`;
 }
 
 // Checks if keys are equal to expected keys and throws an error if they are not equal (reason is relative to keys).
-function validateKeys(objectName, keys, expectedKeys) {
-    const stmt = `The ${objectName} is not valid!\nErrors:\n`;
+function validateKeys(objectName, keys, expectedKeys, customStmt = "") {
+    let stmt = customStmt;
+    if (customStmt === "") {
+        stmt = `The ${objectName} is not valid!\nErrors:\n`;
+    }
+
     if (keys === undefined) {
         throw stmt + errorMsgUnequalKeys(objectName, "is undefined.");
     } else if (keys.length > expectedKeys.length) {
@@ -301,8 +316,8 @@ function validateKeys(objectName, keys, expectedKeys) {
     } else {
         const keyErrors = [];
         for (let i = 0; i < keys.length; i++) {
-            if (keys[i] != expectedKeys[i]) {
-                keyErrors.push(errorMsgUnequalKeys(objectName, `has the key ${keys[i]} instead of ${expectedKeys[i]}.`));
+            if (!(expectedKeys.includes(keys[i]))) {
+                keyErrors.push(errorMsgUnequalKeys(objectName, `has the key ${keys[i]}. The expected keys are ${expectedKeys.join(", ")}!`));
             }
         }
         if (keyErrors.length > 0) {
@@ -384,7 +399,7 @@ function validateDate(objectName, date, variableName) {
 // Validation for an array that throws an error if conditions are not met.
 function validateArray(objectName, array, arrayName = "") {
     let isAre = (arrayName[arrayName.length - 1] === "s") ? "are" : "is";
-    let stmt = `The ${arrayName} of ${objectName} ${isAre} not valid!\nErrors:\n`;
+    let stmt = `The ${arrayName} of ${objectName} ${isAre} not valid! `;
     if (arrayName === "") {
         isAre = (objectName[objectName.length - 1] === "s") ? "are" : "is";
         stmt = `The ${objectName} ${isAre} not valid!\nErrors:\n`;
@@ -537,7 +552,8 @@ function validateAssignment(outerObjectName, assignment, index) {
 
     // Validate that the keys are properly named and that none of them are missing.
     const assignmentKeys = ["id", "name", "due_at", "points_possible"];
-    validateKeys(objectName, Object.keys(assignment), assignmentKeys);
+    const customStmt = `The ${objectName} of id ${assignment.id} from the ${outerObjectName}'s assignments array with index ${index} is invalid! `;
+    validateKeys(objectName, Object.keys(assignment), assignmentKeys, customStmt);
 
     // Validate values by accessing the keys of the object
     const assignmentErrors = []; // Keep track of any errors from any key's value
@@ -580,7 +596,7 @@ function validateAssignment(outerObjectName, assignment, index) {
 
     // Throw an error if the assignment had any errors from validation
     if (assignmentErrors.length > 0) {
-        throw `The ${objectName} of id ${assignment.id} from ${outerObjectName} with index ${index} is invalid!\nErrors:\n${assignmentErrors.join("\n")}`;
+        throw `${customStmt}\nErrors:\n${assignmentErrors.join("\n")}`;
     }
 }
 
@@ -628,8 +644,9 @@ function validateLearnerSubmission(learnerSubmission, assignments, index) {
     validateObject(objectName, learnerSubmission);
 
     // Validate that the keys are properly named and that none of them are missing.
+    const customStmt = `The ${objectName} at index ${index} is invalid!`;
     const learnerSubmissionKeys = ["learner_id", "assignment_id", "submission"];
-    validateKeys(objectName, Object.keys(learnerSubmission), learnerSubmissionKeys);
+    validateKeys(objectName, Object.keys(learnerSubmission), learnerSubmissionKeys, customStmt);
 
     // Validate values by accessing the keys of the object
     const learnerSubmissionErrors = []; // Keep track of any errors from any key's value
@@ -661,7 +678,7 @@ function validateLearnerSubmission(learnerSubmission, assignments, index) {
 
     // Throw an error if the learnerSubmission object had any errors from validation
     if (learnerSubmissionErrors.length > 0) {
-        throw `The ${objectName} at index ${index} is invalid!\nErrors:\n${learnerSubmissionErrors.join("\n")}`;
+        throw `${customStmt}\nErrors:\n${learnerSubmissionErrors.join("\n")}`;
     }
 }
 
@@ -674,7 +691,8 @@ function validateInnerSubmission(learnerSubmission) {
 
     // Validate that the keys are properly named and that none of them are missing.
     const submissionDetailsKeys = ["submitted_at", "score"];
-    validateKeys(objectName, Object.keys(submissionDetails), submissionDetailsKeys);
+    const customStmt = `The learner's submission details with learner id of ${learnerSubmission.learner_id} and assignment id of ${learnerSubmission.assignment_id} is invalid! `; // Space needed
+    validateKeys(objectName, Object.keys(submissionDetails), submissionDetailsKeys, customStmt);
 
     // Validate values by accessing the keys of the object
     const submissionDetailErrors = []; // Keep track of any errors from any key's value
@@ -695,7 +713,7 @@ function validateInnerSubmission(learnerSubmission) {
 
     // Throw error message if the learnerSubmission's submission object had any errors from validation
     if (submissionDetailErrors.length > 0) {
-        throw `The learner's submission details with learner id of ${learnerSubmission.learner_id} and assignment id of ${learnerSubmission.assignment_id} is invalid!\nErrors:\n${submissionDetailErrors.join("\n")}`;
+        throw `${customStmt}\nErrors:\n${submissionDetailErrors.join("\n")}`;
     }
 }
 
@@ -708,9 +726,9 @@ function validateResults(testName, results, expectedResults) {
         validateArray(arrayName, results);
 
         // Validate that generated results has the same number of elements as expected results
-        if (results.length > expectedResult.length) {
+        if (results.length > expectedResults.length) {
             resultErrors.push(`The length of the ${arrayName} is longer than expected! Extra learner objects detected.`);
-        } else if (results.length < expectedResult.length) {
+        } else if (results.length < expectedResults.length) {
             resultErrors.push(`The length of the ${arrayName} is shorter than expected! Missing learner objects.`);
         } else {
             // Validate that each element (learner object) in the array is an object with the proper keys
@@ -721,11 +739,12 @@ function validateResults(testName, results, expectedResults) {
 
                     // Validate that the result has the proper keys
                     const resultKeys = Object.keys(results[i]);
+                    const customStmt = `The ${innerObjName} at index ${i} of the ${arrayName} is invalid!\n`;
                     const expectedResultKeys = Object.keys(expectedResults[i]);
-                    validateKeys(arrayName, resultKeys, expectedResultKeys);
+                    validateKeys(arrayName, resultKeys, expectedResultKeys, customStmt);
 
                     // Validate the values of the keys
-                    areResultObjsEqual(arrayName, result[i], expectedResults[i], innerObjName, i);
+                    areResultObjsEqual(arrayName, results[i], expectedResults[i], innerObjName, i);
                 } catch (error) {
                     resultErrors.push(error);
                 }
@@ -748,7 +767,7 @@ function validateResults(testName, results, expectedResults) {
 // TO DO: MUST finish up feeding data with errors
 
 // Tests
-// Exact desired array
+// The provided results array
 const expectedResult = [
     {
         id: 125,
@@ -765,7 +784,7 @@ const expectedResult = [
 ];
 
 // Desired array modifying the avg in obj2 from 0.833 to 0.87
-const differentExpectedResult = [
+const differentResult = [
     {
         id: 125, // Same
         avg: 0.985, // Same
@@ -777,6 +796,75 @@ const differentExpectedResult = [
         avg: 0.82, // Same
         1: 0.78, // Same
         2: 0.87 // Diff: Should be 0.833
+    }
+];
+
+// Different keys in results array
+const differentKeysResult = [
+    {
+        id: 125,
+        average: 0.985,
+        assignment1: 0.94,
+        assignment2: 1.0
+    },
+    {
+        id: 132,
+        average: 0.82,
+        assignment1: 0.78,
+        assignment2: 0.833
+    },
+];
+
+// Test case for expected output desiring more objects in the array
+const moreResult = [
+    {
+        id: 125,
+        avg: 0.985, // (47 + 150) / (50 + 150)
+        1: 0.94, // 47 / 50
+        2: 1.0 // 150 / 150
+    },
+    {
+        id: 132,
+        avg: 0.82, // (39 + 125) / (50 + 150)
+        1: 0.78, // 39 / 50
+        2: 0.833 // late: (140 - 15) / 150
+    },
+    {
+        id: 139,
+        avg: 0.985, // (47 + 150) / (50 + 150)
+        1: 0.94, // 47 / 50
+        2: 1.0 // 150 / 150
+    },
+    {
+        id: 146,
+        avg: 0.82, // (39 + 125) / (50 + 150)
+        1: 0.78, // 39 / 50
+        2: 0.833 // late: (140 - 15) / 150
+    }
+];
+
+// Test case for expected output desiring less objects in the array
+const lessResult = [
+    {
+        id: 125,
+        avg: 0.985, // (47 + 150) / (50 + 150)
+        1: 0.94, // 47 / 50
+        2: 1.0 // 150 / 150
+    }
+];
+
+const wrongTypeResult = [
+    {
+        id: "125",
+        avg: "0.985",
+        1: 0.94,
+        2: 1.0
+    },
+    {
+        id: 132,
+        avg: 0.82,
+        1: "0.78", 
+        2: "0.833"
     }
 ];
 
@@ -876,6 +964,182 @@ const duplicateLearnerSubmissions = [
     },
 ];
 
+// Need to modify data and declare test case
+const wrongLearnerSubs = [
+    {
+        learner_id: 125,
+        assignment_id: 1,
+        submission: {
+            submitted_at: "2023-01-25",
+            score: 47
+        }
+    },
+    {
+        learner_id: 125,
+        assignment_id: 2,
+        submission: {
+            submitted_at: "2023-02-12",
+            score: 150
+        }
+    },
+    {
+        learner_id: 125,
+        assignment_id: 3,
+        submission: {
+            submitted_at: "2023-01-25",
+            score: 400
+        }
+    },
+    {
+        learner_id: 132,
+        assignment_id: 1,
+        submission: {
+            submitted_at: "2023-01-24",
+            score: 39
+        }
+    },
+    {
+        learner_id: 132,
+        assignment_id: 2,
+        submission: {
+            submitted_at: "2023-03-07",
+            score: 140
+        }
+    }
+];
+
+// Need to modify data and declare test case
+const wrongLearnerSubs2 = [
+    {
+        learner_id: 125,
+        assignment_id: 1,
+        submission: {
+            submitted_at: "2023-01-25",
+            score: 47
+        }
+    },
+    {
+        learner_id: 125,
+        assignment_id: 2,
+        submission: {
+            submitted_at: "2023-02-12",
+            score: 150
+        }
+    },
+    {
+        learner_id: 125,
+        assignment_id: 3,
+        submission: {
+            submitted_at: "2023-01-25",
+            score: 400
+        }
+    },
+    {
+        learner_id: 132,
+        assignment_id: 1,
+        submission: {
+            submitted_at: "2023-01-24",
+            score: 39
+        }
+    },
+    {
+        learner_id: 132,
+        assignment_id: 2,
+        submission: {
+            submitted_at: "2023-03-07",
+            score: 140
+        }
+    }
+];
+
+// Need to modify data and declare test case
+const wrongLearnerSub3 = [
+    {
+        learner_id: 125,
+        assignment_id: 1,
+        submission: {
+            submitted_at: "2023-01-25",
+            score: 47
+        }
+    },
+    {
+        learner_id: 125,
+        assignment_id: 2,
+        submission: {
+            submitted_at: "2023-02-12",
+            score: 150
+        }
+    },
+    {
+        learner_id: 125,
+        assignment_id: 3,
+        submission: {
+            submitted_at: "2023-01-25",
+            score: 400
+        }
+    },
+    {
+        learner_id: 132,
+        assignment_id: 1,
+        submission: {
+            submitted_at: "2023-01-24",
+            score: 39
+        }
+    },
+    {
+        learner_id: 132,
+        assignment_id: 2,
+        submission: {
+            submitted_at: "2023-03-07",
+            score: 140
+        }
+    }
+];
+
+// Need to modify data and declare test case
+const wrongLearnerSubs4 = [
+    {
+        learner_id: 125,
+        assignment_id: 1,
+        submission: {
+            submitted_at: "2023-01-25",
+            score: 47
+        }
+    },
+    {
+        learner_id: 125,
+        assignment_id: 2,
+        submission: {
+            submitted_at: "2023-02-12",
+            score: 150
+        }
+    },
+    {
+        learner_id: 125,
+        assignment_id: 3,
+        submission: {
+            submitted_at: "2023-01-25",
+            score: 400
+        }
+    },
+    {
+        learner_id: 132,
+        assignment_id: 1,
+        submission: {
+            submitted_at: "2023-01-24",
+            score: 39
+        }
+    },
+    {
+        learner_id: 132,
+        assignment_id: 2,
+        submission: {
+            submitted_at: "2023-03-07",
+            score: 140
+        }
+    }
+];
+
 // String id, array name
 const wrongCourseInfo = {
     id: "4",
@@ -913,6 +1177,7 @@ const wrongCourseInfo6 = {
     id: 40
 };
 
+
 // Same as AssignmentGroup, but course_id is 45 instead of 451
 const wrongCourseIdAG = {
     id: 12345,
@@ -941,6 +1206,7 @@ const wrongCourseIdAG = {
     ]
 };
 
+// Same as AssignmentGroup, but group_weight exceeds 100 (is 125)
 const highPercentAG = {
     id: 12345,
     name: "Fundamentals of JavaScript",
@@ -967,6 +1233,71 @@ const highPercentAG = {
         }
     ]
 };
+
+// Assignments wrong type
+const wrongAGassignments = {
+    id: 12345,
+    name: "Fundamentals of JavaScript",
+    course_id: 451,
+    group_weight: 25,
+    assignments: 100
+}
+
+// Assignments array has extra keys [0], one key is wrong [1], missing keys [2]
+const wrongAGassignments2 = {
+    id: 12345,
+    name: "Fundamentals of JavaScript",
+    course_id: 451,
+    group_weight: 25,
+    assignments: [
+        {
+            id: 1,
+            name: "Declare a Variable",
+            due_at: "2023-01-25",
+            points_possible: 50,
+            hasExtraCredit: true
+        },
+        {
+            id: 2,
+            name: "Write a Function",
+            due_at: "2023-02-27",
+            totalPoints: 150
+        },
+        {
+            id: 3,
+            name: "Code the World",
+            due_at: "3156-11-15"
+        }
+    ]
+}
+
+// Same as wrongAGassignments2, except other keys are also invalid (id is identification)
+const wrongAGassignments3 = {
+    identification: 12345,
+    name: "Fundamentals of JavaScript",
+    course_id: 451,
+    group_weight: 25,
+    assignments: [
+        {
+            id: 1,
+            name: "Declare a Variable",
+            due_at: "2023-01-25",
+            points_possible: 50,
+            hasExtraCredit: true
+        },
+        {
+            id: 2,
+            name: "Write a Function",
+            due_at: "2023-02-27",
+            totalPoints: 150
+        },
+        {
+            id: 3,
+            name: "Code the World",
+            due_at: "3156-11-15"
+        }
+    ]
+}
 
 // Assignment Group with negative id, empty name, decimal course_id, wrong type group_weight, repeated assignments (repeated id of 3)
 const erroneousAG = {
@@ -1002,15 +1333,14 @@ const erroneousAG = {
     ]
 };
 
-const wrongAGassigmentKeys = {
-
-};
-
-// Initial test
-const result = getLearnerData(CourseInfo, AssignmentGroup, LearnerSubmissions);
+// Result Tests
+const result = getLearnerData(CourseInfo, AssignmentGroup, LearnerSubmissions); // Initial test
 validateResults("Original Test", result, expectedResult); // Tests passed!
-// validateResults("Different Expected Results (Different Value for a Key)", result, differentExpectedResult); // Tests passed!
-
+// validateResults("Different Expected Results (Different Value for a Key)", differentResult, expectedResult); // Tests passed!
+// validateResults("Different Keys in Expected Result (What if objects in the result from getLearnerData have the wrong keys?)", differentKeysResult, expectedResult); // Tests passed!
+// validateResults("More Results Should be Expected", lessResult, expectedResult); // Tests passed!
+// validateResults("Less Results Should be Expected", moreResult, expectedResult); // Tests passed!
+// validateResults("Wrong Value Types for Keys", wrongTypeResult, expectedResult); // Tests passed!
 
 // Course Info Tests
 // const emptyCourseInfoResult = getLearnerData({}, AssignmentGroup, LearnerSubmissions);
@@ -1025,14 +1355,15 @@ validateResults("Original Test", result, expectedResult); // Tests passed!
 // const wrongCourseInfo3Results = getLearnerData(wrongCourseInfo3, AssignmentGroup, LearnerSubmissions);
 // validateResults("Decimal Id and Undefined Name for Course Info", wrongCourseInfo3Results, expectedResult); // Tests passed!
 
-const wrongCourseInfo4Results = getLearnerData(wrongCourseInfo4, AssignmentGroup, LearnerSubmissions);
-validateResults("Wrong Key Names for Course Info", wrongCourseInfo4Results, expectedResult); // Tests passed!
+// const wrongCourseInfo4Results = getLearnerData(wrongCourseInfo4, AssignmentGroup, LearnerSubmissions);
+// validateResults("Wrong Key Names for Course Info", wrongCourseInfo4Results, expectedResult); // Tests passed!
 
-const wrongCourseInfo5Results = getLearnerData(wrongCourseInfo5, AssignmentGroup, LearnerSubmissions);
-validateResults("Too Many Keys for Course Info", wrongCourseInfo5Results, expectedResult); // Tests passed!
+// const wrongCourseInfo5Results = getLearnerData(wrongCourseInfo5, AssignmentGroup, LearnerSubmissions);
+// validateResults("Too Many Keys for Course Info", wrongCourseInfo5Results, expectedResult); // Tests passed!
 
-const wrongCourseInfo6Results = getLearnerData(wrongCourseInfo6, AssignmentGroup, LearnerSubmissions);
-validateResults("Missing Name Key for Course Info", wrongCourseInfo6Results, expectedResult); // Tests passed!
+// const wrongCourseInfo6Results = getLearnerData(wrongCourseInfo6, AssignmentGroup, LearnerSubmissions);
+// validateResults("Missing Name Key for Course Info", wrongCourseInfo6Results, expectedResult); // Tests passed!
+
 
 // Assignment Group Tests
 // const emptyAssignmentGroupResult = getLearnerData(CourseInfo, {}, LearnerSubmissions);
@@ -1043,15 +1374,28 @@ validateResults("Missing Name Key for Course Info", wrongCourseInfo6Results, exp
 // validateResults("Erroneous Assignment Group", erroneousAGResult, expectedResult); // Tests passed!
 
 // const wrongCourseIdAgResults = getLearnerData(CourseInfo, wrongCourseIdAG, LearnerSubmissions);
-// validateResults("Assignment with Wrong Course Id", wrongCourseIdAgResults, expectedResult); // Tests passed!
+// validateResults("Assignment Group with Wrong Course Id", wrongCourseIdAgResults, expectedResult); // Tests passed!
 
 // const highPercentAGResults = getLearnerData(CourseInfo, highPercentAG, LearnerSubmissions);
-// validateResults("Assignment with Group Weight > 100", highPercentAGResults, expectedResult); // Tests passed!
+// validateResults("Assignment Group with Group Weight > 100", highPercentAGResults, expectedResult); // Tests passed!
+
+// const wrongAGassignmentsResult = getLearnerData(CourseInfo, wrongAGassignments, LearnerSubmissions);
+// validateResults("Assignment Group's Assignments With Wrong Type", wrongAGassignmentsResult, expectedResult); // Tests passed! An array is an object so the error message is fine.
+
+// const wrongAGassignments2Result = getLearnerData(CourseInfo, wrongAGassignments2, LearnerSubmissions);
+// validateResults("Assignment Group's Assignments With Extra Key, Incorrect Key, and Missing Key", wrongAGassignments2Result, expectedResult); // Tests passed!
+
+const wrongAGassignments3Result = getLearnerData(CourseInfo, wrongAGassignments3, LearnerSubmissions);
+validateResults("Assignment Group's Id Key Wrong Name and Assignments Key Errors", wrongAGassignments3Result, expectedResult); // Tests passed! Expected behavior is to stop validation at validateKeys if there is a mismatch in the main object. That's why the key errors in assignments do not show up.
+
 
 // Submissions Tests
 // const emptyLearnerSubmissionsResult = getLearnerData(CourseInfo, AssignmentGroup, []);
 // validateResults("Empty Learner Submissions Result", emptyLearnerSubmissionsResult, expectedResult); // Tests passed!
 
 // Test to ensure getLearnerData works for an array that isn't sorted by learner_id or assignment_id
-// const result2 = getLearnerData(CourseInfo, AssignmentGroup, unorderedLearnerSubmissions);
-// validateResults("Unordered Submissions", result2, expectedResult); // Tests passed!
+// const unorderedResult = getLearnerData(CourseInfo, AssignmentGroup, unorderedLearnerSubmissions);
+// validateResults("Unordered Submissions", unorderedResult, expectedResult); // Tests passed!
+
+const duplicateLSResult = getLearnerData(CourseInfo, AssignmentGroup, duplicateLearnerSubmissions);
+validateResults("Duplicated Entry of Pair (learner_id, assignment_id)", duplicateLSResult, expectedResult);
