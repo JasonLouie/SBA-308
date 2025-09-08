@@ -121,7 +121,6 @@ function getLearnerData(course, ag, submissions) {
     } catch (error) {
         console.log(error);
     }
-
     return results;
 }
 
@@ -239,7 +238,7 @@ function errorMsgUndefined(objectName, variableName = "") {
     if (!variableName) {
         return `The ${objectName} must be defined!`;
     }
-    return `The ${variableName} of ${objectName} must be defined!`;
+    return `The ${variableName} of the ${objectName} must be defined!`;
 }
 
 // Returns the error message for empty strings/objects/arrays.
@@ -292,7 +291,7 @@ function errorMsgUnequalKeys(objectName, reason) {
 
 // Checks if keys are equal to expected keys and throws an error if they are not equal (reason is relative to keys).
 function validateKeys(objectName, keys, expectedKeys) {
-    const stmt = `The ${objectName} is not valid!`;
+    const stmt = `The ${objectName} is not valid!\nErrors:\n`;
     if (keys === undefined) {
         throw stmt + errorMsgUnequalKeys(objectName, "is undefined.");
     } else if (keys.length > expectedKeys.length) {
@@ -307,7 +306,7 @@ function validateKeys(objectName, keys, expectedKeys) {
             }
         }
         if (keyErrors.length > 0) {
-            throw `${stmt}\nErrors:\n${keyErrors.join("\n")}`;
+            throw `${stmt}${keyErrors.join("\n")}`;
         }
     }
 }
@@ -319,7 +318,7 @@ function validateId(objectName, id, variableName = "id") {
     } else if (typeof id != "number") {
         throw errorMsgWrongPrimitiveType(objectName, variableName, typeof id, "number");
     } else if (id < 1) {
-        throw errorMsgInvalidNumberValue(objectName, variableName, id);
+        throw errorMsgInvalidNumberValue(objectName, variableName, id, "Cannot be a negative number!");
     } else if (id % 1) {
         throw errorMsgFloatValue(objectName, variableName, id);
     }
@@ -877,6 +876,43 @@ const duplicateLearnerSubmissions = [
     },
 ];
 
+// String id, array name
+const wrongCourseInfo = {
+    id: "4",
+    name: ["This", "is", "not", "a", "string"]
+};
+
+// Negative id, empty name
+const wrongCourseInfo2 = {
+    id: -643,
+    name: ""
+};
+
+// Decimal id, undefined name
+const wrongCourseInfo3 = {
+    id: 7.26,
+    name: undefined
+};
+
+// Wrong keys
+const wrongCourseInfo4 = {
+    identification: 45,
+    course_name: "This is a course name"
+};
+
+// Extra keys
+const wrongCourseInfo5 = {
+    id: 30,
+    name: "Too many keys!",
+    professor: "Professor Louie",
+    location: "Remote"
+};
+
+// Missing a key (name)
+const wrongCourseInfo6 = {
+    id: 40
+};
+
 // Same as AssignmentGroup, but course_id is 45 instead of 451
 const wrongCourseIdAG = {
     id: 12345,
@@ -966,6 +1002,10 @@ const erroneousAG = {
     ]
 };
 
+const wrongAGassigmentKeys = {
+
+};
+
 // Initial test
 const result = getLearnerData(CourseInfo, AssignmentGroup, LearnerSubmissions);
 validateResults("Original Test", result, expectedResult); // Tests passed!
@@ -976,10 +1016,29 @@ validateResults("Original Test", result, expectedResult); // Tests passed!
 // const emptyCourseInfoResult = getLearnerData({}, AssignmentGroup, LearnerSubmissions);
 // validateResults("Empty Course Info Result", emptyCourseInfoResult, expectedResult); // Tests passed!
 
+// const wrongCourseInfoResults = getLearnerData(wrongCourseInfo, AssignmentGroup, LearnerSubmissions);
+// validateResults("String Id and Array Name for Course Info", wrongCourseInfo, expectedResult); // Tests passed! (Arrays are objects so the console log is fine)
+
+// const wrongCourseInfo2Results = getLearnerData(wrongCourseInfo2, AssignmentGroup, LearnerSubmissions);
+// validateResults("Negative Id and Empty Name for Course Info", wrongCourseInfo2Results, expectedResult); // Tests passed!
+
+// const wrongCourseInfo3Results = getLearnerData(wrongCourseInfo3, AssignmentGroup, LearnerSubmissions);
+// validateResults("Decimal Id and Undefined Name for Course Info", wrongCourseInfo3Results, expectedResult); // Tests passed!
+
+const wrongCourseInfo4Results = getLearnerData(wrongCourseInfo4, AssignmentGroup, LearnerSubmissions);
+validateResults("Wrong Key Names for Course Info", wrongCourseInfo4Results, expectedResult); // Tests passed!
+
+const wrongCourseInfo5Results = getLearnerData(wrongCourseInfo5, AssignmentGroup, LearnerSubmissions);
+validateResults("Too Many Keys for Course Info", wrongCourseInfo5Results, expectedResult); // Tests passed!
+
+const wrongCourseInfo6Results = getLearnerData(wrongCourseInfo6, AssignmentGroup, LearnerSubmissions);
+validateResults("Missing Name Key for Course Info", wrongCourseInfo6Results, expectedResult); // Tests passed!
+
 // Assignment Group Tests
 // const emptyAssignmentGroupResult = getLearnerData(CourseInfo, {}, LearnerSubmissions);
 // validateResults("Empty Assignment Group Result", emptyAssignmentGroupResult, expectedResult); // Tests passed!
 
+// Test case for negative id, empty name, decimal course_id, wrong type group_weight, repeated assignments (repeated id of 3)
 // const erroneousAGResult = getLearnerData(CourseInfo, erroneousAG, LearnerSubmissions);
 // validateResults("Erroneous Assignment Group", erroneousAGResult, expectedResult); // Tests passed!
 
