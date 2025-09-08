@@ -239,7 +239,7 @@ function areResultObjsEqual(arrayName, resultObj, expectedResult, resultName, in
         }
     }
 
-    if (valueErrors.length > 0){
+    if (valueErrors.length > 0) {
         throw valueErrors.join("\n");
     }
 }
@@ -280,7 +280,7 @@ function errorMsgWrongObjectType(objectName, variableName = "", expectedType) {
 
 // Returns the error message when the variable's value does not match the condition of the lower bound. Conditions are >, <, >=, <=, or == 
 function errorMsgInvalidNumberValue(objectName, variableName, variable, additionalReason = "", bound = 1, comparisonType = "less than") {
-    return `The ${variableName} of ${objectName} is ${variable} and cannot be ${comparisonType} ${bound}!` + `${(additionalReason) ? (" " + additionalReason) : ""}`;
+    return `The ${variableName} of the ${objectName} is ${variable} and cannot be ${comparisonType} ${bound}!` + `${(additionalReason) ? (" " + additionalReason) : ""}`;
 }
 
 // Returns the error message when the variable is a decimal/float value when it shouldn't be.
@@ -293,35 +293,23 @@ function errorMsgUnequalIds(objectName1, id1, objectName2, id2, idName) {
     return `The ${idName} of the ${objectName1} is ${id1}. Expected the ${idName} to be ${id2}! The ${objectName1}'s ${idName} must match the ${objectName2}'s ${idName}!`;
 }
 
-// Returns the error message when the provided keys do not match the expected keys.
-function errorMsgUnequalKeys(objectName, reason) {
-    const vowels = ["a", "e", "i", "o", "u"];
-    const aWord = vowels.includes(objectName[0]) ? "an" : "a";
-    return `The keys for the ${objectName} provided and expected keys for ${aWord} ${objectName} are different. The ${objectName} ${reason}`;
-}
-
 // Checks if keys are equal to expected keys and throws an error if they are not equal (reason is relative to keys).
-function validateKeys(objectName, keys, expectedKeys, customStmt = "") {
-    let stmt = customStmt;
-    if (customStmt === "") {
-        stmt = `The ${objectName} is not valid!\nErrors:\n`;
-    }
-
+function validateKeys(objectName, keys, expectedKeys) {
     if (keys === undefined) {
-        throw stmt + errorMsgUnequalKeys(objectName, "is undefined.");
+        throw `The ${objectName} is undefined.`;
     } else if (keys.length > expectedKeys.length) {
-        throw stmt + errorMsgUnequalKeys(objectName, "has extra keys.");
+        throw `The ${objectName} has extra keys.`;
     } else if (keys.length < expectedKeys.length) {
-        throw stmt + errorMsgUnequalKeys(objectName, "is missing keys.");
+        throw `The ${objectName} is missing keys.`;
     } else {
         const keyErrors = [];
         for (let i = 0; i < keys.length; i++) {
             if (!(expectedKeys.includes(keys[i]))) {
-                keyErrors.push(errorMsgUnequalKeys(objectName, `has the key ${keys[i]}. The expected keys are ${expectedKeys.join(", ")}!`));
+                keyErrors.push(`The ${objectName} has the key ${keys[i]}. The expected keys are ${expectedKeys.join(", ")}!`);
             }
         }
         if (keyErrors.length > 0) {
-            throw `${stmt}${keyErrors.join("\n")}`;
+            throw `${keyErrors.join("\n")}`;
         }
     }
 }
@@ -390,7 +378,7 @@ function validateDate(objectName, date, variableName) {
             if (monthsObj[dateArr[1]] === undefined) { // Check if month exists
                 throw `${stmt} Invalid month of ${dateArr[1]}! Month must be between 01 and 12.`;
             } else if (monthsObj[dateArr[1]] < Number(dateArr[2])) { // Check if day is valid
-                throw `${stmt} Invalid day of ${dateArr[2]}! Month is ${dateArr[1]}, so day must be between 01 and ${monthsArr[dateArr[1]]}.`;
+                throw `${stmt} Invalid day of ${dateArr[2]}! Month is ${dateArr[1]}, so day must be between 01 and ${monthsObj[dateArr[1]]}.`;
             }
         }
     }
@@ -398,301 +386,328 @@ function validateDate(objectName, date, variableName) {
 
 // Validation for an array that throws an error if conditions are not met.
 function validateArray(objectName, array, arrayName = "") {
-    let isAre = (arrayName[arrayName.length - 1] === "s") ? "are" : "is";
-    let stmt = `The ${arrayName} of ${objectName} ${isAre} not valid! `;
-    if (arrayName === "") {
-        isAre = (objectName[objectName.length - 1] === "s") ? "are" : "is";
-        stmt = `The ${objectName} ${isAre} not valid!\nErrors:\n`;
-    }
-
     if (array === undefined) {
-        throw stmt + errorMsgUndefined(objectName, arrayName);
+        throw errorMsgUndefined(objectName, arrayName);
     } else if (typeof array != "object") {
-        throw stmt + errorMsgWrongPrimitiveType(objectName, arrayName, typeof array, "object");
+        throw errorMsgWrongPrimitiveType(objectName, arrayName, typeof array, "object");
     } else if (!(array instanceof Array)) {
-        throw stmt + errorMsgWrongObjectType(objectName, arrayName, "Array");
+        throw errorMsgWrongObjectType(objectName, arrayName, "Array");
     } else if (array.length === 0) {
-        throw stmt + errorMsgEmpty(objectName, arrayName);
+        throw errorMsgEmpty(objectName, arrayName);
     }
 }
 
 // Validation for an object that throws an error if conditions are not met.
 function validateObject(objectName, object) {
-    const stmt = `The ${objectName} is not valid!\nErrors:\n`;
     if (object === undefined) {
-        throw stmt + errorMsgUndefined(objectName);
+        throw errorMsgUndefined(objectName);
     } else if (typeof object != "object") {
-        throw stmt + errorMsgWrongPrimitiveType(objectName, "", typeof object, "object");
+        throw errorMsgWrongPrimitiveType(objectName, "", typeof object, "object");
     } else if (Object.keys(object).length === 0) {
-        throw stmt + errorMsgEmpty(objectName);
+        throw errorMsgEmpty(objectName);
     }
 }
 
 // Validation for course information that throws an error if conditions are not met. 
 function validateCourse(course) {
     const objectName = "course";
-    // Validate that course is an object
-    validateObject(objectName, course);
+    const courseErrors = [];
 
-    // Validate that the keys are properly named and that none of them are missing.
-    const courseKeys = ["id", "name"];
-    validateKeys(objectName, Object.keys(course), courseKeys);
-
-    // Validate values by accessing the keys of the object
-    const courseErrors = [];// Keep track of any errors from any key's value
-
-    // Validate course group's id
     try {
-        validateId(objectName, course.id);
+        // Validate that course is an object
+        validateObject(objectName, course);
+
+        // Validate that the keys are properly named and that none of them are missing.
+        const courseKeys = ["id", "name"];
+        validateKeys(objectName, Object.keys(course), courseKeys);
     } catch (error) {
         courseErrors.push(error);
     }
 
-    // Validate course group's name
-    try {
-        validateName(objectName, course.name);
-    } catch (error) {
-        courseErrors.push(error);
+    // Only perform this validation if object and keys validation were successful
+    if (courseErrors.length === 0) {
+        // Validate values by accessing the keys of the object
+
+        // Validate course group's id
+        try {
+            validateId(objectName, course.id);
+        } catch (error) {
+            courseErrors.push(error);
+        }
+
+        // Validate course group's name
+        try {
+            validateName(objectName, course.name);
+        } catch (error) {
+            courseErrors.push(error);
+        }
     }
 
     // Throw an error if the course had an errors from validation
     if (courseErrors.length > 0) {
-        throw `The ${objectName} is not valid!\nErrors:\n${courseErrors.join("\n")}`;
+        throw `Course Errors:\nThe ${objectName} is not valid!\n${courseErrors.join("\n")}`;
     }
 }
 
 // Check the entire assignment group
 function validateAssignments(assignmentGroup, courseId) {
     const objectName = "assignment group";
-    // Validate that assignmentGroup is an object
-    validateObject(objectName, assignmentGroup);
-
-    // Validate that the keys are properly named and that none of them are missing.
-    const assignmentGroupKeys = ["id", "name", "course_id", "group_weight", "assignments"];
-    validateKeys(objectName, Object.keys(assignmentGroup), assignmentGroupKeys);
-
-    // Validate values by accessing the keys of the object
-    const assignmentGroupErrors = []; // Keep track of any errors from any key's value
-
-    // Validate assignment group's id
+    const assignmentGroupErrors = [];
     try {
-        validateId(objectName, assignmentGroup.id);
+        // Validate that assignmentGroup is an object
+        validateObject(objectName, assignmentGroup);
+
+        // Validate that the keys are properly named and that none of them are missing.
+        const assignmentGroupKeys = ["id", "name", "course_id", "group_weight", "assignments"];
+        validateKeys(objectName, Object.keys(assignmentGroup), assignmentGroupKeys);
     } catch (error) {
         assignmentGroupErrors.push(error);
     }
 
-    // Validate assignment group's name
-    try {
-        validateName(objectName, assignmentGroup.name);
-    } catch (error) {
-        assignmentGroupErrors.push(error);
-    }
+    // Only perform this validation if object and keys validation were successful
+    if (assignmentGroupErrors.length === 0) {
+        // Validate values by accessing the keys of the object
 
-    // Validate assignment group's course id
-    try {
-        validateId(objectName, assignmentGroup.course_id, "course id");
-        if (assignmentGroup.course_id != courseId) {
-            throw errorMsgUnequalIds(objectName, assignmentGroup.course_id, "course", courseId, "course id");
+        // Validate assignment group's id
+        try {
+            validateId(objectName, assignmentGroup.id);
+        } catch (error) {
+            assignmentGroupErrors.push(error);
         }
-    } catch (error) {
-        assignmentGroupErrors.push(error);
-    }
 
-    // Validate assignment group's group weight
-    try {
-        if (assignmentGroup.group_weight === undefined) {
-            throw errorMsgUndefined(objectName, "group weight");
-        } else if (typeof assignmentGroup.group_weight != "number") {
-            throw errorMsgWrongPrimitiveType(objectName, "group weight", typeof assignmentGroup.group_weight, "number");
-        } else if (assignmentGroup.group_weight < 1) {
-            throw errorMsgInvalidNumberValue(objectName, "group weight", assignmentGroup.group_weight);
-        } else if (assignmentGroup.group_weight > 100) {
-            throw errorMsgInvalidNumberValue(objectName, "group weight", assignmentGroup.group_weight, "Group weight percentage cannot be greater than 100!", 100, "greater than");
+        // Validate assignment group's name
+        try {
+            validateName(objectName, assignmentGroup.name);
+        } catch (error) {
+            assignmentGroupErrors.push(error);
         }
-    } catch (error) {
-        assignmentGroupErrors.push(error);
-    }
 
-    // Validate assignment group's assignments array
-    try {
-        validateArray(objectName, assignmentGroup.assignments, "assignments");
-
-        // Validate each individual assignment from the assignment group's assignments array
-        const assignmentIds = [];
-
-        for (let i = 0; i < assignmentGroup.assignments.length; i++) {
-            const assignment = assignmentGroup.assignments[i];
-            try {
-                validateAssignment(objectName, assignment, i);
-                // Ensure unique assignment ids
-                if (assignmentIds.includes(assignment.id)) {
-                    throw `Assignment of id ${assignment.id} already exists in ${objectName}!`;
-                }
-                assignmentIds.push(assignment.id);
-            } catch (error) {
-                assignmentGroupErrors.push(error);
+        // Validate assignment group's course id
+        try {
+            validateId(objectName, assignmentGroup.course_id, "course id");
+            if (assignmentGroup.course_id != courseId) {
+                throw errorMsgUnequalIds(objectName, assignmentGroup.course_id, "course", courseId, "course id");
             }
+        } catch (error) {
+            assignmentGroupErrors.push(error);
         }
-    } catch (error) {
-        assignmentGroupErrors.push(error);
+
+        // Validate assignment group's group weight
+        try {
+            if (assignmentGroup.group_weight === undefined) {
+                throw errorMsgUndefined(objectName, "group weight");
+            } else if (typeof assignmentGroup.group_weight != "number") {
+                throw errorMsgWrongPrimitiveType(objectName, "group weight", typeof assignmentGroup.group_weight, "number");
+            } else if (assignmentGroup.group_weight < 1) {
+                throw errorMsgInvalidNumberValue(objectName, "group weight", assignmentGroup.group_weight);
+            } else if (assignmentGroup.group_weight > 100) {
+                throw errorMsgInvalidNumberValue(objectName, "group weight", assignmentGroup.group_weight, "Group weight percentage cannot be greater than 100!", 100, "greater than");
+            }
+        } catch (error) {
+            assignmentGroupErrors.push(error);
+        }
+
+        // Validate assignment group's assignments array
+        try {
+            validateArray(objectName, assignmentGroup.assignments, "assignments");
+
+            // Validate each individual assignment from the assignment group's assignments array
+            const assignmentIds = [];
+
+            for (let i = 0; i < assignmentGroup.assignments.length; i++) {
+                const assignment = assignmentGroup.assignments[i];
+                try {
+                    validateAssignment(objectName, assignment, i);
+                    // Ensure unique assignment ids
+                    if (assignmentIds.includes(assignment.id)) {
+                        throw `Assignment of id ${assignment.id} already exists in ${objectName}!`;
+                    }
+                    assignmentIds.push(assignment.id);
+                } catch (error) {
+                    assignmentGroupErrors.push(error + "\n");
+                }
+            }
+        } catch (error) {
+            assignmentGroupErrors.push(error);
+        }
     }
 
     // Throw error message if the assignment group had any errors from validation
     if (assignmentGroupErrors.length > 0) {
-        throw `The ${objectName} is not valid!\nErrors:\n${assignmentGroupErrors.join("\n")}`;
+        throw `Assignment Group Errors:\nThe ${objectName} is not valid!\n${assignmentGroupErrors.join("\n")}`;
     }
 }
 
 // Validate the individual assignment object
 function validateAssignment(outerObjectName, assignment, index) {
     const objectName = "assignment";
-
-    // Validate that assignment is an object
-    validateObject(objectName, assignment);
-
-    // Validate that the keys are properly named and that none of them are missing.
-    const assignmentKeys = ["id", "name", "due_at", "points_possible"];
-    const customStmt = `The ${objectName} of id ${assignment.id} from the ${outerObjectName}'s assignments array with index ${index} is invalid! `;
-    validateKeys(objectName, Object.keys(assignment), assignmentKeys, customStmt);
-
-    // Validate values by accessing the keys of the object
-    const assignmentErrors = []; // Keep track of any errors from any key's value
-
-    // Validate assignment's id
+    const customStmt = `The ${objectName} of id ${assignment.id} from the ${outerObjectName}'s assignments array with index ${index} is invalid!\n`;
+    const assignmentErrors = [];
     try {
-        validateId(objectName, assignment.id);
+        // Validate that assignment is an object
+        validateObject(objectName, assignment);
+
+        // Validate that the keys are properly named and that none of them are missing.
+        const assignmentKeys = ["id", "name", "due_at", "points_possible"];
+
+        validateKeys(objectName, Object.keys(assignment), assignmentKeys, customStmt);
     } catch (error) {
         assignmentErrors.push(error);
     }
 
-    // Validate assignment's name
-    try {
-        validateName(objectName, assignment.name);
-    } catch (error) {
-        assignmentErrors.push(error);
-    }
+    // Only perform this validation if object and keys validation were successful
+    if (assignmentErrors.length === 0) {
+        // Validate values by accessing the keys of the object
 
-    // Validate assignment's due date
-    try {
-        validateDate(objectName, assignment.due_at, "due date");
-    } catch (error) {
-        assignmentErrors.push(error);
-    }
-
-    // Validate assignment's points possible
-    try {
-        if (assignment.points_possible === undefined) {
-            throw (errorMsgUndefined(objectName, "points possible"));
-        } else if (typeof assignment.points_possible != "number") {
-            throw (errorMsgWrongPrimitiveType(objectName, "points possible", typeof assignment.points_possible, "number"));
-        } else if (assignment.points_possible < 0) {
-            throw (errorMsgInvalidNumberValue(objectName, "points possible", assignment.points_possible, "Cannot be negative!"));
-        } else if (assignment.points_possible === 0) {
-            throw (errorMsgInvalidNumberValue(objectName, "points possible", assignment.points_possible, "Cannot divide by 0!", "equals to"));
+        // Validate assignment's id
+        try {
+            validateId(objectName, assignment.id);
+        } catch (error) {
+            assignmentErrors.push(error);
         }
-    } catch (error) {
-        assignmentErrors.push(error);
+
+        // Validate assignment's name
+        try {
+            validateName(objectName, assignment.name);
+        } catch (error) {
+            assignmentErrors.push(error);
+        }
+
+        // Validate assignment's due date
+        try {
+            validateDate(objectName, assignment.due_at, "due date");
+        } catch (error) {
+            assignmentErrors.push(error);
+        }
+
+        // Validate assignment's points possible
+        try {
+            if (assignment.points_possible === undefined) {
+                throw (errorMsgUndefined(objectName, "points possible"));
+            } else if (typeof assignment.points_possible != "number") {
+                throw (errorMsgWrongPrimitiveType(objectName, "points possible", typeof assignment.points_possible, "number"));
+            } else if (assignment.points_possible < 0) {
+                throw (errorMsgInvalidNumberValue(objectName, "points possible", assignment.points_possible, "Cannot be negative!"));
+            } else if (assignment.points_possible === 0) {
+                throw (errorMsgInvalidNumberValue(objectName, "points possible", assignment.points_possible, "Cannot divide by 0!", "equals to"));
+            }
+        } catch (error) {
+            assignmentErrors.push(error);
+        }
     }
 
     // Throw an error if the assignment had any errors from validation
     if (assignmentErrors.length > 0) {
-        throw `${customStmt}\nErrors:\n${assignmentErrors.join("\n")}`;
+        throw `The ${objectName} of id ${assignment.id} from the ${outerObjectName}'s assignments array with index ${index} is invalid!\n${assignmentErrors.join("\n")}`;
     }
 }
 
 // Validate the array of submissions
 function validateSubmissions(submissions, assignments) {
-    const arrayName = "learners' submissions";
+    const arrayName = "submissions array";
+    const submissionErrors = [];
 
-    // Validate that submissions is an array
-    validateArray(arrayName, submissions, "");
+    try {
+        // Validate that submissions is an array
+        validateArray(arrayName, submissions, "", "Submissions Array");
+    } catch (error) {
+        submissionErrors.push(error);
+    }
 
-    // Validate each individual submission from the submissions array
-    const submissionErrors = []; // Keep track of any errors from any learnerSubmission element of the array
+    // Only perform this validation if array validation was successful
+    if (submissionErrors.length === 0) {
+        // Validate each individual submission from the submissions array
 
-    const submissionObjsArray = []; // Array of object {learnerId: value, assignmentId: value}
-    for (let i = 0; i < submissions.length; i++) {
-        const learnerSubmission = submissions[i];
-        try {
-            validateLearnerSubmission(learnerSubmission, assignments, i);
+        const submissionObjsArray = []; // Array of object {learnerId: value, assignmentId: value}
+        for (let i = 0; i < submissions.length; i++) {
+            const learnerSubmission = submissions[i];
+            try {
+                validateLearnerSubmission(learnerSubmission, assignments, i);
 
-            // Handles repeated learner submissions (a unique submission has a unique pair of learner_id and assignment_id)
-            const index = findLearnerSubmission(submissionObjsArray, learnerSubmission.learner_id, learnerSubmission.assignment_id);
-            if (index === -1) {
-                const newSubmissionObj = {};
-                newSubmissionObj.learnerId = learnerSubmission.learner_id;
-                newSubmissionObj.assignmentId = learnerSubmission.assignment_id;
-                submissionObjsArray.push(newSubmissionObj);
-            } else {
-                throw `A duplicate of a learner submission with learner_id ${learnerSubmission.learner_id} and assignment_id ${learnerSubmission.assignment_id} was found!`
+                // Handles repeated learner submissions (a unique submission has a unique pair of learner_id and assignment_id)
+                const index = findLearnerSubmission(submissionObjsArray, learnerSubmission.learner_id, learnerSubmission.assignment_id);
+                if (index === -1) {
+                    const newSubmissionObj = {};
+                    newSubmissionObj.learnerId = learnerSubmission.learner_id;
+                    newSubmissionObj.assignmentId = learnerSubmission.assignment_id;
+                    submissionObjsArray.push(newSubmissionObj);
+                } else {
+                    throw `A duplicate of a learner submission with learner_id ${learnerSubmission.learner_id} and assignment_id ${learnerSubmission.assignment_id} was found!`
+                }
+            } catch (error) {
+                submissionErrors.push(error + "\n");
             }
-        } catch (error) {
-            submissionErrors.push(error);
         }
     }
 
     // Throw an error if the submissions array had any errors from validation
     if (submissionErrors.length > 0) {
-        throw `The ${arrayName} are not valid!\nErrors:\n${submissionErrors.join("\n")}`;
+        throw `Submissions Array Errors:\nThe ${arrayName} is not valid!\n${submissionErrors.join("\n")}`;
     }
 }
 
 // Validate the individual submission object of a specific learner
 function validateLearnerSubmission(learnerSubmission, assignments, index) {
     const objectName = "learner's submission";
-    // Validate that learnerSubmission is an object
-    validateObject(objectName, learnerSubmission);
+    const learnerSubmissionErrors = [];
 
-    // Validate that the keys are properly named and that none of them are missing.
-    const customStmt = `The ${objectName} at index ${index} is invalid!`;
-    const learnerSubmissionKeys = ["learner_id", "assignment_id", "submission"];
-    validateKeys(objectName, Object.keys(learnerSubmission), learnerSubmissionKeys, customStmt);
-
-    // Validate values by accessing the keys of the object
-    const learnerSubmissionErrors = []; // Keep track of any errors from any key's value
-
-    // Validate the learner id of the learner's submission
     try {
-        validateId(objectName, learnerSubmission.learner_id, "learner id");
+        // Validate that learnerSubmission is an object
+        validateObject(objectName, learnerSubmission, "Learner's Submission");
+
+        // Validate that the keys are properly named and that none of them are missing.
+        const learnerSubmissionKeys = ["learner_id", "assignment_id", "submission"];
+        validateKeys(objectName, Object.keys(learnerSubmission), learnerSubmissionKeys);
     } catch (error) {
         learnerSubmissionErrors.push(error);
     }
 
-    // Validate the assignment id of the learner's submission
-    try {
-        validateId(objectName, learnerSubmission.assignment_id, "assignment id");
-        if (findAssignment(assignments, learnerSubmission.assignment_id) === -1) {
-            throw `The ${objectName}'s assignment id of ${learnerSubmission.assignment_id} does not exist in the assignment group!`;
+    // Only perform this validation if object and keys validation were successful
+    if (learnerSubmissionErrors.length === 0) {
+        // Validate values by accessing the keys of the object
+
+        // Validate the learner id of the learner's submission
+        try {
+            validateId(objectName, learnerSubmission.learner_id, "learner id");
+        } catch (error) {
+            learnerSubmissionErrors.push(error);
         }
-    } catch (error) {
-        learnerSubmissionErrors.push(error);
-    }
 
-    // Validate the inner submission's details of the learner's submission
-    try {
-        // Validate the submission object of the learner's submission:
-        validateInnerSubmission(learnerSubmission);
-    } catch (error) {
-        learnerSubmissionErrors.push(error);
+        // Validate the assignment id of the learner's submission
+        try {
+            validateId(objectName, learnerSubmission.assignment_id, "assignment id");
+            if (findAssignment(assignments, learnerSubmission.assignment_id) === -1) {
+                throw `The ${objectName}'s assignment id of ${learnerSubmission.assignment_id} does not exist in the assignment group!`;
+            }
+        } catch (error) {
+            learnerSubmissionErrors.push(error);
+        }
+
+        // Validate the inner submission's details of the learner's submission
+        try {
+            // Validate the submission object of the learner's submission:
+            validateInnerSubmission(learnerSubmission);
+        } catch (error) {
+            learnerSubmissionErrors.push(error);
+        }
     }
 
     // Throw an error if the learnerSubmission object had any errors from validation
     if (learnerSubmissionErrors.length > 0) {
-        throw `${customStmt}\nErrors:\n${learnerSubmissionErrors.join("\n")}`;
+        throw `The ${objectName} at index ${index} is invalid!\n${learnerSubmissionErrors.join("\n")}`;
     }
 }
 
 // Validate the details of a learner's submission (the nested 'submission' object)
 function validateInnerSubmission(learnerSubmission) {
-    const objectName = "submission's details";
+    const objectName = "submission details";
     const submissionDetails = learnerSubmission.submission;
     // Validate that submissionDetails is an object
-    validateObject(objectName, submissionDetails);
+    validateObject(objectName, submissionDetails, "Submission Details");
 
     // Validate that the keys are properly named and that none of them are missing.
     const submissionDetailsKeys = ["submitted_at", "score"];
-    const customStmt = `The learner's submission details with learner id of ${learnerSubmission.learner_id} and assignment id of ${learnerSubmission.assignment_id} is invalid! `; // Space needed
-    validateKeys(objectName, Object.keys(submissionDetails), submissionDetailsKeys, customStmt);
+    validateKeys(objectName, Object.keys(submissionDetails), submissionDetailsKeys);
 
     // Validate values by accessing the keys of the object
     const submissionDetailErrors = []; // Keep track of any errors from any key's value
@@ -713,7 +728,7 @@ function validateInnerSubmission(learnerSubmission) {
 
     // Throw error message if the learnerSubmission's submission object had any errors from validation
     if (submissionDetailErrors.length > 0) {
-        throw `${customStmt}\nErrors:\n${submissionDetailErrors.join("\n")}`;
+        throw `The learner's ${objectName} with learner id of ${learnerSubmission.learner_id} and assignment id of ${learnerSubmission.assignment_id} is invalid!\n${submissionDetailErrors.join("\n")}`;
     }
 }
 
@@ -723,7 +738,7 @@ function validateResults(testName, results, expectedResults) {
     const resultErrors = [];
     try {
         // Validate that generated results is an array
-        validateArray(arrayName, results);
+        validateArray(arrayName, results, "", "Generated Results");
 
         // Validate that generated results has the same number of elements as expected results
         if (results.length > expectedResults.length) {
@@ -752,21 +767,19 @@ function validateResults(testName, results, expectedResults) {
         }
 
     } catch (error) {
-        console.log(`${testName}:\nResults and expected results are not equal!`)
-        console.log(error);
-        return;
+        resultErrors.push(error);
     }
     if (resultErrors.length > 0) {
-        console.log(`${testName}:\nResults and expected results are not equal!`);
-        console.log(`Errors:\n${resultErrors.join("\n")}`);
+        console.log(`${testName}: Results and expected results are not equal!`);
+        console.log(`Generated Results Errors:\n${resultErrors.join("\n")}`);
     } else {
-        console.log(`${testName}:\nResults and expected results are equal!`);
+        console.log(`${testName}: Results and expected results are equal!`);
     }
+    console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"); // Log a divider to symbolize end of the test.
 }
 
-// TO DO: MUST finish up feeding data with errors
 
-// Tests
+// Test Variables
 // The provided results array
 const expectedResult = [
     {
@@ -853,6 +866,7 @@ const lessResult = [
     }
 ];
 
+// Test case for expected output wrong types for values
 const wrongTypeResult = [
     {
         id: "125",
@@ -863,10 +877,12 @@ const wrongTypeResult = [
     {
         id: 132,
         avg: 0.82,
-        1: "0.78", 
+        1: "0.78",
         2: "0.833"
     }
 ];
+
+
 
 // LearnerSubmissions, but elements are unordered
 const unorderedLearnerSubmissions = [
@@ -964,27 +980,29 @@ const duplicateLearnerSubmissions = [
     },
 ];
 
-// Need to modify data and declare test case
+// Entry at index 0: Wrong learner_id type, undefined assignment_id, wrong keys but same amount
+// Entry at index 1: learner_id as a negative, assignment_id as a float, submission object with missing key (score)
+// Entry at index 2: Missing key of assignment_id
+// Entry at index 3: The assignment_id doesn't exist in AssignmentGroup and submission object has extra keys
+// Entry at index 4: Submission object has proper keys, but value types are wrong.
 const wrongLearnerSubs = [
     {
-        learner_id: 125,
-        assignment_id: 1,
+        learner_id: "125",
+        assignment_id: undefined,
         submission: {
-            submitted_at: "2023-01-25",
-            score: 47
+            date_submitted: "2023-01-25",
+            points_earned: 47
         }
     },
     {
-        learner_id: 125,
-        assignment_id: 2,
+        learner_id: -125,
+        assignment_id: 2.3,
         submission: {
             submitted_at: "2023-02-12",
-            score: 150
         }
     },
     {
         learner_id: 125,
-        assignment_id: 3,
         submission: {
             submitted_at: "2023-01-25",
             score: 400
@@ -992,53 +1010,60 @@ const wrongLearnerSubs = [
     },
     {
         learner_id: 132,
-        assignment_id: 1,
+        assignment_id: 12,
         submission: {
             submitted_at: "2023-01-24",
-            score: 39
+            score: 39,
+            time_submitted: "08:56 PM"
         }
     },
     {
         learner_id: 132,
         assignment_id: 2,
         submission: {
-            submitted_at: "2023-03-07",
-            score: 140
+            submitted_at: 2023,
+            score: "140"
         }
     }
 ];
 
-// Need to modify data and declare test case
+// Entry at index 0: Submission object as an array (Post tests: Noticed that since an array is an object, it makes sense that the numerical indexes are the keys)
+// Entry at index 1: Submission object correct value types, wrong value (invalid date, negative score)
+// Entry at index 2: Submission object undefined score and submitted_at
+// Entry at index 3: Submission object invalid submitted_at - Nonexistent day of month 
+// Entry at index 4: Submission invalid submitted_at - Nonexistent month
+// Entry at index 5: Submission invalid submitted_at - Year less than 1000 (not 4 characters as expected)
+// Entry at index 6: Submission invalid submitted_at - Date has too many '-'
 const wrongLearnerSubs2 = [
     {
         learner_id: 125,
         assignment_id: 1,
-        submission: {
-            submitted_at: "2023-01-25",
-            score: 47
-        }
+        submission: [
+            "2023-01-25",
+            47
+        ]
     },
     {
         learner_id: 125,
         assignment_id: 2,
         submission: {
-            submitted_at: "2023-02-12",
-            score: 150
+            submitted_at: "This is not a date",
+            score: -150
         }
     },
     {
         learner_id: 125,
         assignment_id: 3,
         submission: {
-            submitted_at: "2023-01-25",
-            score: 400
+            submitted_at: undefined,
+            score: undefined
         }
     },
     {
         learner_id: 132,
         assignment_id: 1,
         submission: {
-            submitted_at: "2023-01-24",
+            submitted_at: "2023-01-39",
             score: 39
         }
     },
@@ -1046,95 +1071,23 @@ const wrongLearnerSubs2 = [
         learner_id: 132,
         assignment_id: 2,
         submission: {
-            submitted_at: "2023-03-07",
+            submitted_at: "2023-13-07",
             score: 140
         }
-    }
-];
-
-// Need to modify data and declare test case
-const wrongLearnerSub3 = [
-    {
-        learner_id: 125,
-        assignment_id: 1,
-        submission: {
-            submitted_at: "2023-01-25",
-            score: 47
-        }
     },
     {
-        learner_id: 125,
-        assignment_id: 2,
-        submission: {
-            submitted_at: "2023-02-12",
-            score: 150
-        }
-    },
-    {
-        learner_id: 125,
+        learner_id: 132,
         assignment_id: 3,
         submission: {
-            submitted_at: "2023-01-25",
-            score: 400
-        }
-    },
-    {
-        learner_id: 132,
-        assignment_id: 1,
-        submission: {
-            submitted_at: "2023-01-24",
-            score: 39
-        }
-    },
-    {
-        learner_id: 132,
-        assignment_id: 2,
-        submission: {
-            submitted_at: "2023-03-07",
+            submitted_at: "224-03-07",
             score: 140
         }
-    }
-];
-
-// Need to modify data and declare test case
-const wrongLearnerSubs4 = [
+    },
     {
-        learner_id: 125,
+        learner_id: 138,
         assignment_id: 1,
         submission: {
-            submitted_at: "2023-01-25",
-            score: 47
-        }
-    },
-    {
-        learner_id: 125,
-        assignment_id: 2,
-        submission: {
-            submitted_at: "2023-02-12",
-            score: 150
-        }
-    },
-    {
-        learner_id: 125,
-        assignment_id: 3,
-        submission: {
-            submitted_at: "2023-01-25",
-            score: 400
-        }
-    },
-    {
-        learner_id: 132,
-        assignment_id: 1,
-        submission: {
-            submitted_at: "2023-01-24",
-            score: 39
-        }
-    },
-    {
-        learner_id: 132,
-        assignment_id: 2,
-        submission: {
-            submitted_at: "2023-03-07",
+            submitted_at: "2024-03-07-5",
             score: 140
         }
     }
@@ -1342,7 +1295,7 @@ validateResults("Original Test", result, expectedResult); // Tests passed!
 // validateResults("Less Results Should be Expected", moreResult, expectedResult); // Tests passed!
 // validateResults("Wrong Value Types for Keys", wrongTypeResult, expectedResult); // Tests passed!
 
-// Course Info Tests
+// // Course Info Tests
 // const emptyCourseInfoResult = getLearnerData({}, AssignmentGroup, LearnerSubmissions);
 // validateResults("Empty Course Info Result", emptyCourseInfoResult, expectedResult); // Tests passed!
 
@@ -1365,11 +1318,11 @@ validateResults("Original Test", result, expectedResult); // Tests passed!
 // validateResults("Missing Name Key for Course Info", wrongCourseInfo6Results, expectedResult); // Tests passed!
 
 
-// Assignment Group Tests
+// // Assignment Group Tests
 // const emptyAssignmentGroupResult = getLearnerData(CourseInfo, {}, LearnerSubmissions);
 // validateResults("Empty Assignment Group Result", emptyAssignmentGroupResult, expectedResult); // Tests passed!
 
-// Test case for negative id, empty name, decimal course_id, wrong type group_weight, repeated assignments (repeated id of 3)
+// // Test case for negative id, empty name, decimal course_id, wrong type group_weight, repeated assignments (repeated id of 3)
 // const erroneousAGResult = getLearnerData(CourseInfo, erroneousAG, LearnerSubmissions);
 // validateResults("Erroneous Assignment Group", erroneousAGResult, expectedResult); // Tests passed!
 
@@ -1385,17 +1338,23 @@ validateResults("Original Test", result, expectedResult); // Tests passed!
 // const wrongAGassignments2Result = getLearnerData(CourseInfo, wrongAGassignments2, LearnerSubmissions);
 // validateResults("Assignment Group's Assignments With Extra Key, Incorrect Key, and Missing Key", wrongAGassignments2Result, expectedResult); // Tests passed!
 
-const wrongAGassignments3Result = getLearnerData(CourseInfo, wrongAGassignments3, LearnerSubmissions);
-validateResults("Assignment Group's Id Key Wrong Name and Assignments Key Errors", wrongAGassignments3Result, expectedResult); // Tests passed! Expected behavior is to stop validation at validateKeys if there is a mismatch in the main object. That's why the key errors in assignments do not show up.
+// const wrongAGassignments3Result = getLearnerData(CourseInfo, wrongAGassignments3, LearnerSubmissions);
+// validateResults("Assignment Group's Id Key Wrong Name and Assignments Key Errors", wrongAGassignments3Result, expectedResult); // Tests passed! Expected behavior is to stop validation at validateKeys if there is a mismatch in the main object. That's why the key errors in assignments do not show up.
 
 
-// Submissions Tests
+// // Submissions Tests
 // const emptyLearnerSubmissionsResult = getLearnerData(CourseInfo, AssignmentGroup, []);
 // validateResults("Empty Learner Submissions Result", emptyLearnerSubmissionsResult, expectedResult); // Tests passed!
 
-// Test to ensure getLearnerData works for an array that isn't sorted by learner_id or assignment_id
+// // Test to ensure getLearnerData works for an array that isn't sorted by learner_id or assignment_id
 // const unorderedResult = getLearnerData(CourseInfo, AssignmentGroup, unorderedLearnerSubmissions);
 // validateResults("Unordered Submissions", unorderedResult, expectedResult); // Tests passed!
 
-const duplicateLSResult = getLearnerData(CourseInfo, AssignmentGroup, duplicateLearnerSubmissions);
-validateResults("Duplicated Entry of Pair (learner_id, assignment_id)", duplicateLSResult, expectedResult);
+// const duplicateLSResult = getLearnerData(CourseInfo, AssignmentGroup, duplicateLearnerSubmissions);
+// validateResults("Duplicated Entry of Pair (learner_id, assignment_id)", duplicateLSResult, expectedResult);
+
+// const wrongLearnerSubsResult = getLearnerData(CourseInfo, AssignmentGroup, wrongLearnerSubs);
+// validateResults("LearnerSubs With Errors (Check comments by Sub's Declaration)", wrongLearnerSubsResult, expectedResult);
+
+// const wrongLearnerSubsResult2 = getLearnerData(CourseInfo, AssignmentGroup, wrongLearnerSubs2);
+// validateResults("LearnerSubs2 With Errors (Check comments by Sub's Declaration", wrongLearnerSubsResult2, expectedResult);
