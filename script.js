@@ -194,6 +194,19 @@ function findLearnerObj(resultsArray, learnerId) {
     return -1;
 }
 
+// Returns the index of the learner submission by learnerId and assignmentId. Use case of the function is to check if a submission is unique based on learner_id and assignment_id using a custom object
+function findLearnerSubmission(objArr, learnerId, assignmentId) {
+    if (objArr.length > 0) {
+        for (let i = 0; i < objArr.length; i++) {
+            const obj = objArr[i];
+            if (obj.learnerId === learnerId && obj.assignmentId === assignmentId) {
+                return i;
+            }
+        };
+    }
+    return -1;
+}
+
 // Check if two result objects have equal values. When this function is called, it is a given that the objects have equal keys.
 function areResultObjsEqual(arrayName, result, expectedResult, resultName, index) {
     for (key in result) {
@@ -485,10 +498,17 @@ function validateAssignments(assignmentGroup, courseId) {
         validateArray(objectName, assignmentGroup.assignments, "assignments");
 
         // Validate each individual assignment from the assignment group's assignments array
+        const assignmentIds = [];
+
         for (let i = 0; i < assignmentGroup.assignments.length; i++) {
             const assignment = assignmentGroup.assignments[i];
             try {
                 validateAssignment(objectName, assignment, i);
+                // Ensure unique assignment ids
+                if (assignmentIds.includes(assignment.id)) {
+                    throw `Assignment of id ${assignment.id} already exists in ${objectName}!`;
+                }
+                assignmentIds.push(assignment.id);
             } catch (error) {
                 assignmentGroupErrors.push(error);
             }
@@ -569,10 +589,22 @@ function validateSubmissions(submissions, assignments) {
     // Validate each individual submission from the submissions array
     const submissionErrors = []; // Keep track of any errors from any learnerSubmission element of the array
 
+    const submissionObjsArray = []; // Array of object {learnerId: value, assignmentId: value}
     for (let i = 0; i < submissions.length; i++) {
         const learnerSubmission = submissions[i];
         try {
             validateLearnerSubmission(learnerSubmission, assignments, i);
+
+            // Handles repeated learner submissions (a unique submission has a unique pair of learner_id and assignment_id)
+            const index = findLearnerSubmission(submissionObjsArray, learnerSubmission.learner_id, learnerSubmission.assignment_id);
+            if (index === -1) {
+                const newSubmissionObj = {};
+                newSubmissionObj.learnerId = learnerSubmission.learner_id;
+                newSubmissionObj.assignmentId = learnerSubmission.assignment_id;
+                submissionObjsArray.push(newSubmissionObj);
+            } else {
+                throw `A duplicate of a learner submission with learner_id ${learnerSubmission.learner_id} and assignment_id ${learnerSubmission.assignment_id} was found!`
+            }
         } catch (error) {
             submissionErrors.push(error);
         }
@@ -744,96 +776,103 @@ const differentExpectedResult = [
     }
 ];
 
-// Python Course Info (Valid)
-const PythonCourseInfo = {
-    id: 37,
-    name: "Introduction to Python"
-}
-
-const PythonAG = {
-    id: 543,
-    name: "Fundamentals of Python",
-    course_id: 37,
-    group_weight: 20,
-    assignments: [
-        {
-            id: 1,
-            name: "Assignment 1",
-            due_at: "2025-06-24",
-            points_possible: 100
-        },
-        {
-            id: 2,
-            name: "Assignment 2",
-            due_at: "2025-07-17",
-            points_possible: 300
-        },
-        {
-            id: 3,
-            name: "Assignment 3",
-            due_at: "2025-08-01",
-            points_possible: 200
-        },
-        {
-            id: 4,
-            name: "Assignment 4",
-            due_at: "2025-09-04",
-            points_possible: 400
-        }
-    ]
-}
-
-const PythonSubmissions = [
+// LearnerSubmissions, but elements are unordered
+const unorderedLearnerSubmissions = [
     {
-        learner_id: 289,
-        assignment_id: 1,
-        submission: {
-            submitted_at: "2025-04-25",
-            score: 90
-        }
-    },
-    {
-        learner_id: 289,
-        assignment_id: 2,
-        submission: {
-            submitted_at: "2025-04-25",
-            score: 240
-        }
-    },
-    {
-        learner_id: 289,
+        learner_id: 125,
         assignment_id: 3,
         submission: {
-            submitted_at: "2025-04-25",
-            score: 90
+            submitted_at: "2023-01-25",
+            score: 400
         }
     },
     {
-        learner_id: 289,
-        assignment_id: 1,
+        learner_id: 132,
+        assignment_id: 2,
         submission: {
-            submitted_at: "2025-04-25",
-            score: 90
+            submitted_at: "2023-03-07",
+            score: 140
         }
     },
     {
-        learner_id: 289,
+        learner_id: 125,
         assignment_id: 1,
         submission: {
-            submitted_at: "2025-04-25",
-            score: 90
+            submitted_at: "2023-01-25",
+            score: 47
         }
     },
     {
-        learner_id: 289,
+        learner_id: 132,
         assignment_id: 1,
         submission: {
-            submitted_at: "2025-04-25",
-            score: 90
+            submitted_at: "2023-01-24",
+            score: 39
+        }
+    },
+    {
+        learner_id: 125,
+        assignment_id: 2,
+        submission: {
+            submitted_at: "2023-02-12",
+            score: 150
         }
     }
-]
+];
 
+// Same as LearnerSubmissions, but contains a duplicated entry (another entry with the same pair of learner_id and assignment_id)
+const duplicateLearnerSubmissions = [
+    {
+        learner_id: 125,
+        assignment_id: 3,
+        submission: {
+            submitted_at: "2023-01-25",
+            score: 400
+        }
+    },
+    {
+        learner_id: 132,
+        assignment_id: 2,
+        submission: {
+            submitted_at: "2023-03-07",
+            score: 140
+        }
+    },
+    {
+        learner_id: 125,
+        assignment_id: 1,
+        submission: {
+            submitted_at: "2023-01-25",
+            score: 47
+        }
+    },
+    {
+        learner_id: 132,
+        assignment_id: 1,
+        submission: {
+            submitted_at: "2023-01-24",
+            score: 39
+        }
+    },
+    {
+        learner_id: 125,
+        assignment_id: 2,
+        submission: {
+            submitted_at: "2023-02-12",
+            score: 150
+        }
+    },
+    {
+        learner_id: 132,
+        assignment_id: 2,
+        submission: {
+            submitted_at: "2023-02-27",
+            score: 140
+        }
+    },
+];
+
+// Same as AssignmentGroup, but course_id is 45 instead of 451
 const wrongCourseIdAG = {
     id: 12345,
     name: "Fundamentals of JavaScript",
@@ -888,11 +927,50 @@ const highPercentAG = {
     ]
 };
 
+// Assignment Group with negative id, empty name, decimal course_id, wrong type group_weight, repeated assignments (repeated id of 1)
+const erroneousAG = {
+    id: -12345,
+    name: "",
+    course_id: 4.51,
+    group_weight: "25",
+    assignments: [
+        {
+            id: 1,
+            name: "Declare a Variable",
+            due_at: "2023-01-25",
+            points_possible: 50
+        },
+        {
+            id: 2,
+            name: "Write a Function",
+            due_at: "2023-02-27",
+            points_possible: 150
+        },
+        {
+            id: 3,
+            name: "Code the World",
+            due_at: "3156-11-15",
+            points_possible: 500
+        },
+        {
+            id: 3, // Repeated id
+            name: "Code Outer Space",
+            due_at: "5167-10-05",
+            points_possible: 5000
+        },
+    ]
+};
+
 // Initial test
 const result = getLearnerData(CourseInfo, AssignmentGroup, LearnerSubmissions);
 validateResults("Original Test", result, expectedResult);
-validateResults("Different Expected Results (Different Value for a Key)", result, differentExpectedResult); // console.log for errors was as intended
+validateResults("Different Expected Results (Different Value for a Key)", result, differentExpectedResult); // Tests passed!
 
+const result2 = getLearnerData(CourseInfo, AssignmentGroup, unorderedLearnerSubmissions);
+validateResults("Unordered Submissions", result2, expectedResult);
+
+const erroneousAGResult = getLearnerData(CourseInfo, erroneousAG, LearnerSubmissions);
+validateResults("Erroneous Assignment Group", erroneousAGResult, expectedResult);
 // const wrongCourseIdAgResults = getLearnerData(CourseInfo, wrongCourseIdAG, LearnerSubmissions);
 // validateResults("Assignment with Wrong Course Id", wrongCourseIdAgResults, expectedResult);
 
