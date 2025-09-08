@@ -7,10 +7,10 @@ This is a description of all objects and expected key-value behaviors. The objec
 
 <table>
 <tr>
-<td>Object Name</td> <td>Type</td> <td>Structure</td> <td>Description</td>
+<td>Object Name</td> <td>Structure</td> <td>Description</td>
 </tr>
 <tr>
-<td>Course Info</td> <td>Object</td>
+<td>Course Info</td>
 <td>
 
 ```javascript
@@ -21,10 +21,10 @@ This is a description of all objects and expected key-value behaviors. The objec
 ```
 
 </td>
-<td>The id attribute must be an integer greater than 1. The name attribute must be a non-empty string.</td>
+<td>An example of a valid Course Info Object. See comments for expected behavior. More info in the expected behavior section.</td>
 </tr>
 <tr>
-<td>Assignment Group</td> <td>Object</td>
+<td>Assignment Group</td>
 <td>
 
 ```javascript
@@ -33,54 +33,77 @@ This is a description of all objects and expected key-value behaviors. The objec
     name: "Fundamentals of JavaScript",
     course_id: 451,
     group_weight: 25,
-    assignments: [] // Non-empty array of assignment objects
+    assignments: [ 
+        {
+            id: 1, 
+            name: "Declare a Variable",
+            due_at: "2023-01-25",
+            points_possible: 50
+        }
+    ]
 };
 ```
 
 </td>
-<td>The id attribute must be an integer greater than 1. The name attribute must be a non-empty string.</td>
+<td>An example of a valid Assignment Group Object. Each element of the array will be referred to as an Assignment Object. More info in the expected behavior section.</td>
 </tr>
 <tr>
-<td>Assignments</td> <td>Object</td>
+<td>Learner Submissions</td>
 <td>
 
 ```javascript
 [
     {
-        id: 1,
-        name: "Declare a Variable",
-        due_at: "2023-01-25",
-        points_possible: 50
-    }
-]
-```
-
-</td>
-<td>The id attribute must be an integer greater than 1. The name attribute must be a non-empty string.</td>
-</tr>
-<tr>
-<td>Learner Submissions</td> <td>Array</td>
-<td>
-
-```javascript
-[
-    {
-        learner_id: 125,
-        assignment_id: 1,
-        submission: {
+        learner_id: 125, 
+        assignment_id: 1, 
+        submission: { 
             submitted_at: "2023-01-25",
             score: 47
         }
     }
-]
+];
 ```
 
 </td>
-<td>The id attribute must be an integer greater than 1. The name attribute must be a non-empty string.</td>
+<td>An example of a valid entry within the Generated Results Array. Each element of the array will be referred to as a Learner's Submission Object. The object nested in the Learner's Submission Object will be referred to as the Submission Details Object. For the key score, an inclusive upper bound of points_possible from assignment was considered, but extra credit exists. More info in the expected behavior section.</td>
+</tr>
+<tr>
+<td>Generated Results</td>
+<td>
+
+```javascript
+[
+    {
+        id: 125,
+        avg: 0.985,
+        1: 0.94,
+        2: 1.0
+    },
+];
+```
+
+</td>
+<td>An example of a valid entry within the Generated Results Array. This is the output of the `getLearnerData` function. Each element of the array will be referred to as a result object. More info in the expected behavior section.</td>
 </tr>
 </table>
 
+## Expected Behavior of Key Value Pairs
+| Key | Value Example | Value's Behavior | Usage of Key-Value Pair |
+| ----- | ----- | ----- | ----- |
+| `id` | `1` | Any integer larger than 0. Otherwise, it is invalid. | Course Info, Assignment Group, Assignment Object, and Generated Results's Learner Object elements |
+| `name` | `"Course"` | Any non-empty string. Otherwise, it is invalid. | Course Info and Assignment Group |
+| `course_id` | `1` | Any integer larger than 0 that matches the `id` value of the course. Otherwise, it is invalid. | Assignment Group |
+| `group_weight` | `25` | Any integer larger than 0, but less than or equal to 100 because the weight is a percentage. Otherwise, it is invalid. | Assignment Group |
+| `assignments` | `[{assignment object}]` | A non-empty array of unique assignment objects with keys `id`, `name`, `due_at`, `points_possible`. If the `id` already exists or other constraints are not met, the assignment is invalid. | Assignment Group |
+| `due_at` | `2025-09-01` | A non-empty string in the format of YYYY-MM-DD. Invalid when the format is wrong. If the year (YYYY) does not have 4 characters and the month (MM) and day (DD) do not have 2 characters, date is invalid. If month isn't between 01 and 12 inclusively and the day isn't part of that month, it is also invalid. | Assignment Object |
+| `points_possible` | `1` | Any number larger than 0. It cannot be 0 because this will be used to calculate the learner's average later on. If these constraints aren't met, it is invalid. | Assignment Object |
+| `learner_id` | `1` | Any integer larger than 0. Otherwise, it is invalid. | Learner's Submission Object |
+| `assignment_id` | `1` | Any integer larger than 0. Otherwise, it is invalid. | Learner's Submission Object |
+| `submission` | `{submission details object}` | A non-empty object of with keys `id`, `name`, `due_at`, `points_possible`. If the `id` already exists or other constraints are not met, the assignment is invalid. | Submission Details Object |
+| `submitted_at` | `2025-05-2025` | A non-empty string in the format of YYYY-MM-DD. Invalid when the format is wrong. If the year (YYYY) does not have 4 characters and the month (MM) and day (DD) do not have 2 characters, date is invalid. If month isn't between 01 and 12 inclusively and the day isn't part of that month, it is also invalid. | Submission Details Object |
+| `score` | `150` | Any integer greater than or equal to 0 `id`, `name`, `due_at`, `points_possible`. If the `id` already exists or other constraints are not met, the assignment is invalid. | Submission Details Object |
+
 ## Description of Functions
 | Function With Parameters | Arguments | Description | Expected Output |
-| ---- | --- | ------ | ---- |
+| ----- | ---- | ------- | ----- |
 | `getLearnerData(course, ag, submissions)` | Must contain a course
