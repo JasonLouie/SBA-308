@@ -85,7 +85,7 @@ function getLearnerData(course, ag, submissions) {
         validateCourse(course);
 
         // Will throw an error if the assignment group object is invalid. This is good because an invalid assignments array from the assignment group would mess up the submissions validation.
-        validateAssignments(ag, course.id);
+        validateAssignmentGroup(ag, course.id);
 
         // Will throw an error if the array of submissions is invalid. This is good because retrieving learner data relies on iterating through the submissions array. There is no reason to iterate through an invalid submissions array.
         validateSubmissions(submissions, ag.assignments);
@@ -93,8 +93,14 @@ function getLearnerData(course, ag, submissions) {
 
         for (let i = 0; i < submissions.length; i++) {
             const learnerSub = submissions[i];
-            let learnerObjIndex = findLearnerObj(results, learnerSub.learner_id);
             const aId = findAssignment(ag.assignments, learnerSub.assignment_id);
+
+            // If assignment isn't due yet, do not attempt to make or modify the learner object. The reason is to handle the case of creating the learner object only to find out that this was the only submission from that learner. This will end up leaving an incomplete learner object that will fail tests later on.
+            const canBeChecked = includeAssignment(ag.assignments[aId])
+            if (!canBeChecked || aId < 0) continue; // Skip assignments that are not close to the due date or not found.
+
+            let learnerObjIndex = findLearnerObj(results, learnerSub.learner_id);
+
             if (learnerObjIndex === -1) { // If learnerObj does not exist, immediately initalize the first user
                 const learnerObj = {};
                 learnerObj.id = learnerSub.learner_id;
@@ -103,12 +109,9 @@ function getLearnerData(course, ag, submissions) {
                 results.push(learnerObj);
                 learnerObjIndex = findLearnerObj(results, learnerSub.learner_id);
             }
-            // Only add assignments to the learnerObj that have close due dates.
-            const canBeChecked = includeAssignment(ag.assignments[aId])
-            if (!canBeChecked || aId < 0) continue; // Skip assignments that are not close to the due date.
 
             const learnerObj = results[learnerObjIndex];
-            const score = isLate(ag.assignments[aId], learnerSub.submission.submitted_at, learnerSub.submission.score);
+            const score = updateLateScore(ag.assignments[aId], learnerSub.submission.submitted_at, learnerSub.submission.score);
             const pointsPossible = ag.assignments[aId].points_possible;
             const grade = score / pointsPossible;
 
@@ -159,12 +162,13 @@ function calculateAvgs(results) {
 }
 
 // Check if assignment is late and updates score accordingly.
-function isLate(assignment, submissionDate, score) {
-    if (score <= assignment.points_possible * 0.1) { // Do not check if assignment is late when score is at most 10% of the points possible
-        return score;
-    }
-    if (submissionDate > assignment.due_at) {
-        return score - (assignment.points_possible * 0.1);
+function updateLateScore(assignment, submissionDate, score) {
+    const isLate = submissionDate > assignment.due_at;
+    const penalty = assignment.points_possible * 0.1;
+    if (score <= penalty && isLate) { // Check if assignment is late and less than or equal to the penalty. If it is then, return a 0 to avoid a negative score.
+        return 0;
+    } else if (isLate) { // Check if assignment is late
+        return score - penalty;
     }
     return score;
 }
@@ -175,9 +179,9 @@ function includeAssignment(assignment) {
     return todaysDate > assignment.due_at;
 }
 
-// Returns the index of the assignment object with assignment_id = assignmentId. Returns -1 if the assignment with assignmentId cannot be found.
+// Returns the index of the assignment object with assignment id = assignmentId. Returns -1 if the assignment with assignmentId cannot be found.
 function findAssignment(assignments, assignmentId) {
-    if (assignments) {
+    if (assignments.length > 0){
         for (let i = 0; i < assignments.length; i++) {
             if (assignments[i].id == assignmentId) {
                 return i;
@@ -188,10 +192,10 @@ function findAssignment(assignments, assignmentId) {
 }
 
 // Returns the index of the learner object with id = learnerId. Returns -1 if the learner object with learnerId cannot be found.
-function findLearnerObj(resultsArray, learnerId) {
-    if (resultsArray) {
-        for (let i = 0; i < resultsArray.length; i++) {
-            if (resultsArray[i].id == learnerId) {
+function findLearnerObj(results, learnerId) {
+    if (results.length > 0) {
+        for (let i = 0; i < results.length; i++) {
+            if (results[i].id == learnerId) {
                 return i;
             }
         }
@@ -449,8 +453,8 @@ function validateCourse(course) {
     }
 }
 
-// Check the entire assignment group
-function validateAssignments(assignmentGroup, courseId) {
+// Validate the entire assignment group
+function validateAssignmentGroup(assignmentGroup, courseId) {
     const objectName = "assignment group";
     const assignmentGroupErrors = [];
     try {
@@ -1286,6 +1290,7 @@ const erroneousAG = {
 
 // Result Tests
 const result = getLearnerData(CourseInfo, AssignmentGroup, LearnerSubmissions); // Initial test
+console.log(result);
 validateResults("Original Test", result, expectedResult); // Tests passed!
 // validateResults("Different Expected Results (Different Value for a Key)", differentResult, expectedResult); // Tests passed!
 // validateResults("Different Keys in Expected Result (What if objects in the result from getLearnerData have the wrong keys?)", differentKeysResult, expectedResult); // Tests passed!
@@ -1346,7 +1351,7 @@ validateResults("Original Test", result, expectedResult); // Tests passed!
 
 // // Test to ensure getLearnerData works for an array that isn't sorted by learner_id or assignment_id
 // const unorderedResult = getLearnerData(CourseInfo, AssignmentGroup, unorderedLearnerSubmissions);
-// validateResults("Unordered Submissions", unorderedResult, expectedResult); // Tests passed!
+// validateResults("Unordered Submissions", unorderedResult, expectedResult); // Tests passed because results are unequal! Order does matter because the first learner added is id 132. This is because a learner object is not created for learner id 125 for an assignment not due yet. This is to avoid creating a learner object for someone that only turned in an assignment that is not due yet.
 
 // const duplicateLSResult = getLearnerData(CourseInfo, AssignmentGroup, duplicateLearnerSubmissions);
 // validateResults("Duplicated Entry of Pair (learner_id, assignment_id)", duplicateLSResult, expectedResult);
