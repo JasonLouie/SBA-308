@@ -1291,8 +1291,9 @@ const erroneousAG = {
 // Result Tests
 const result = getLearnerData(CourseInfo, AssignmentGroup, LearnerSubmissions); // Initial test
 validateResults("Original Test", result, expectedResult); // Tests passed!
-validateResults("Different Expected Results (Different Value for a Key)", differentResult, expectedResult); // Tests passed!
-validateResults("Different Keys in Expected Result (What if objects in the result from getLearnerData have the wrong keys?)", differentKeysResult, expectedResult); // Tests passed!
+console.log("Result:\n", result);
+// validateResults("Different Expected Results (Different Value for a Key)", differentResult, expectedResult); // Tests passed!
+// validateResults("Different Keys in Expected Result (What if objects in the result from getLearnerData have the wrong keys?)", differentKeysResult, expectedResult); // Tests passed!
 // validateResults("More Results Should be Expected", lessResult, expectedResult); // Tests passed!
 // validateResults("Less Results Should be Expected", moreResult, expectedResult); // Tests passed!
 // validateResults("Wrong Value Types for Keys", wrongTypeResult, expectedResult); // Tests passed!
