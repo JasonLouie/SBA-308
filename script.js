@@ -160,7 +160,7 @@ function calculateAvgs(results) {
 
 // Check if assignment is late and updates score accordingly.
 function isLate(assignment, submissionDate, score) {
-    if (score === 0) { // Do not check if assignment is late when score is 0
+    if (score <= assignment.points_possible * 0.1) { // Do not check if assignment is late when score is at most 10% of the points possible
         return score;
     }
     if (submissionDate > assignment.due_at) {
@@ -880,7 +880,6 @@ const wrongTypeResult = [
         2: "0.833"
     }
 ];
-
 
 
 // LearnerSubmissions, but elements are unordered

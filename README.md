@@ -9,6 +9,7 @@ This is a description of all objects and expected key-value behaviors. The objec
 <tr>
 <td>Object Name</td> <td>Structure</td> <td>Description</td>
 </tr>
+
 <tr>
 <td>Course Info</td>
 <td>
@@ -23,6 +24,7 @@ This is a description of all objects and expected key-value behaviors. The objec
 </td>
 <td>An example of a valid Course Info Object. See comments for expected behavior. More info in the expected behavior section.</td>
 </tr>
+
 <tr>
 <td>Assignment Group</td>
 <td>
@@ -47,6 +49,24 @@ This is a description of all objects and expected key-value behaviors. The objec
 </td>
 <td>An example of a valid Assignment Group Object. Each element of the array will be referred to as an Assignment Object. More info in the expected behavior section.</td>
 </tr>
+
+<tr>
+<td>Assignment Object</td>
+<td>
+
+```javascript
+{
+    id: 1, 
+    name: "Declare a Variable",
+    due_at: "2023-01-25",
+    points_possible: 50
+};
+```
+
+</td>
+<td>An example of a valid Assignment Object. It represents each element of the array and will be referred to as an Assignment Object. More info in the expected behavior section.</td>
+</tr>
+
 <tr>
 <td>Learner Submissions</td>
 <td>
@@ -65,8 +85,49 @@ This is a description of all objects and expected key-value behaviors. The objec
 ```
 
 </td>
-<td>An example of a valid entry within the Generated Results Array. Each element of the array will be referred to as a Learner's Submission Object. The object nested in the Learner's Submission Object will be referred to as the Submission Details Object. For the key score, an inclusive upper bound of points_possible from assignment was considered, but extra credit exists. More info in the expected behavior section.</td>
+<td>An example of a valid entry within the Generated Results Array. Each element of the array will be referred to as a Learner Submission Object. The object nested in the Learner Submission Object will be referred to as the Submission Details Object.</td>
 </tr>
+
+<tr>
+<td>Learner Submission Object</td>
+<td>
+
+```javascript
+[
+    {
+        learner_id: 125, 
+        assignment_id: 1, 
+        submission: { 
+            submitted_at: "2023-01-25",
+            score: 47
+        }
+    }
+];
+```
+
+</td>
+<td>An example of a valid Learner Submission Object. The object nested in this object will be referred to as the Submission Details Object. For the key score, an inclusive upper bound of points_possible from assignment was considered, but extra credit exists. More info in the expected behavior section.</td>
+</tr>
+
+<tr>
+<td>Generated Results</td>
+<td>
+
+```javascript
+[
+    {
+        id: 125,
+        avg: 0.985,
+        1: 0.94,
+        2: 1.0
+    },
+];
+```
+
+</td>
+<td>An example of a valid entry within the Generated Results Array. This is the output of the `getLearnerData` function. Each element of the array will be referred to as a result object. More info in the expected behavior section.</td>
+</tr>
+
 <tr>
 <td>Generated Results</td>
 <td>
