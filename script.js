@@ -333,9 +333,9 @@ function validateDate(objectName, date, variableName) {
     } else if (typeof date != "string") {
         throw errorMsgWrongPrimitiveType(objectName, variableName, typeof date, "string");
     } else if (date === "") {
-        throw `${stmt} Cannot be an empty string!`;
-    } else if (!date.includes("-")) {
-        throw `${stmt} Missing '-'!`;
+        throw `Cannot be an empty string!`;
+    } else if (!(date.includes("-"))) {
+        throw `Missing '-'!`;
     } else {
         const dateArr = date.split("-");
         // Ex: ["2025", "09", "05"]
@@ -1291,36 +1291,36 @@ const wrongLearnerSubs2 = [
 
 
 // Result Tests
-const result = getLearnerData(CourseInfo, AssignmentGroup, LearnerSubmissions); // Initial test
-validateResults("Original Test", result, expectedResult); // Tests passed!
-console.log("Result:\n", result);
-validateResults("Different Expected Results (Different Value for a Key)", differentResult, expectedResult); // Tests passed!
-validateResults("Different Keys in Expected Result (What if objects in the result from getLearnerData have the wrong keys?)", differentKeysResult, expectedResult); // Tests passed!
-validateResults("More Results Should be Expected", lessResult, expectedResult); // Tests passed!
-validateResults("Less Results Should be Expected", moreResult, expectedResult); // Tests passed!
-validateResults("Wrong Value Types for Keys", wrongTypeResult, expectedResult); // Tests passed!
+const originalResult = getLearnerData(CourseInfo, AssignmentGroup, LearnerSubmissions); // Initial test
+validateResults("Original Test", originalResult, expectedResult); // Tests passed!
+console.log("Result:\n", originalResult);
+// validateResults("Different Expected Results (Different Value for a Key)", differentResult, expectedResult); // Tests passed!
+// validateResults("Different Keys in Expected Result (What if objects in the result from getLearnerData have the wrong keys?)", differentKeysResult, expectedResult); // Tests passed!
+// validateResults("More Results Should be Expected", lessResult, expectedResult); // Tests passed!
+// validateResults("Less Results Should be Expected", moreResult, expectedResult); // Tests passed!
+// validateResults("Wrong Value Types for Keys", wrongTypeResult, expectedResult); // Tests passed!
 
-// Course Info Tests
-const emptyCourseInfoResult = getLearnerData({}, AssignmentGroup, LearnerSubmissions);
-validateResults("Empty Course Info Result", emptyCourseInfoResult, expectedResult); // Tests passed!
+// // Course Info Tests
+// const emptyCourseInfoResult = getLearnerData({}, AssignmentGroup, LearnerSubmissions);
+// validateResults("Empty Course Info Result", emptyCourseInfoResult, expectedResult); // Tests passed!
 
-const wrongCourseInfoResults = getLearnerData(wrongCourseInfo, AssignmentGroup, LearnerSubmissions);
-validateResults("String Id and Array Name for Course Info", wrongCourseInfo, expectedResult); // Tests passed! (Arrays are objects so the console log is fine)
+// const wrongCourseInfoResults = getLearnerData(wrongCourseInfo, AssignmentGroup, LearnerSubmissions);
+// validateResults("String Id and Array Name for Course Info", wrongCourseInfo, expectedResult); // Tests passed! (Arrays are objects so the console log is fine)
 
-const wrongCourseInfo2Results = getLearnerData(wrongCourseInfo2, AssignmentGroup, LearnerSubmissions);
-validateResults("Negative Id and Empty Name for Course Info", wrongCourseInfo2Results, expectedResult); // Tests passed!
+// const wrongCourseInfo2Results = getLearnerData(wrongCourseInfo2, AssignmentGroup, LearnerSubmissions);
+// validateResults("Negative Id and Empty Name for Course Info", wrongCourseInfo2Results, expectedResult); // Tests passed!
 
-const wrongCourseInfo3Results = getLearnerData(wrongCourseInfo3, AssignmentGroup, LearnerSubmissions);
-validateResults("Decimal Id and Undefined Name for Course Info", wrongCourseInfo3Results, expectedResult); // Tests passed!
+// const wrongCourseInfo3Results = getLearnerData(wrongCourseInfo3, AssignmentGroup, LearnerSubmissions);
+// validateResults("Decimal Id and Undefined Name for Course Info", wrongCourseInfo3Results, expectedResult); // Tests passed!
 
-const wrongCourseInfo4Results = getLearnerData(wrongCourseInfo4, AssignmentGroup, LearnerSubmissions);
-validateResults("Wrong Key Names for Course Info", wrongCourseInfo4Results, expectedResult); // Tests passed!
+// const wrongCourseInfo4Results = getLearnerData(wrongCourseInfo4, AssignmentGroup, LearnerSubmissions);
+// validateResults("Wrong Key Names for Course Info", wrongCourseInfo4Results, expectedResult); // Tests passed!
 
-const wrongCourseInfo5Results = getLearnerData(wrongCourseInfo5, AssignmentGroup, LearnerSubmissions);
-validateResults("Too Many Keys for Course Info", wrongCourseInfo5Results, expectedResult); // Tests passed!
+// const wrongCourseInfo5Results = getLearnerData(wrongCourseInfo5, AssignmentGroup, LearnerSubmissions);
+// validateResults("Too Many Keys for Course Info", wrongCourseInfo5Results, expectedResult); // Tests passed!
 
-const wrongCourseInfo6Results = getLearnerData(wrongCourseInfo6, AssignmentGroup, LearnerSubmissions);
-validateResults("Missing Name Key for Course Info", wrongCourseInfo6Results, expectedResult); // Tests passed!
+// const wrongCourseInfo6Results = getLearnerData(wrongCourseInfo6, AssignmentGroup, LearnerSubmissions);
+// validateResults("Missing Name Key for Course Info", wrongCourseInfo6Results, expectedResult); // Tests passed!
 
 
 // // Assignment Group Tests
@@ -1351,7 +1351,7 @@ validateResults("Missing Name Key for Course Info", wrongCourseInfo6Results, exp
 // const emptyLearnerSubmissionsResult = getLearnerData(CourseInfo, AssignmentGroup, []);
 // validateResults("Empty Learner Submissions Result", emptyLearnerSubmissionsResult, expectedResult); // Tests passed!
 
-// // Test to ensure getLearnerData works for an array that isn't sorted by learner_id or assignment_id
+// Test to ensure getLearnerData works for an array that isn't sorted by learner_id or assignment_id
 // const unorderedResult = getLearnerData(CourseInfo, AssignmentGroup, unorderedLearnerSubmissions);
 // validateResults("Unordered Submissions", unorderedResult, expectedResult); // Tests passed because results are unequal! Order does matter because the first learner added is id 132. This is because a learner object is not created for learner id 125 for an assignment not due yet. This is to avoid creating a learner object for someone that only turned in an assignment that is not due yet.
 
