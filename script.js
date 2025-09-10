@@ -886,6 +886,200 @@ const wrongTypeResult = [
 ];
 
 
+// String id, array name
+const wrongCourseInfo = {
+    id: "4",
+    name: ["This", "is", "not", "a", "string"]
+};
+
+// Negative id, empty name
+const wrongCourseInfo2 = {
+    id: -643,
+    name: ""
+};
+
+// Decimal id, undefined name
+const wrongCourseInfo3 = {
+    id: 7.26,
+    name: undefined
+};
+
+// Wrong keys
+const wrongCourseInfo4 = {
+    identification: 45,
+    course_name: "This is a course name"
+};
+
+// Extra keys
+const wrongCourseInfo5 = {
+    id: 30,
+    name: "Too many keys!",
+    professor: "Professor Louie",
+    location: "Remote"
+};
+
+// Missing a key (name)
+const wrongCourseInfo6 = {
+    id: 40
+};
+
+
+// Same as AssignmentGroup, but course_id is 45 instead of 451
+const wrongCourseIdAG = {
+    id: 12345,
+    name: "Fundamentals of JavaScript",
+    course_id: 45,
+    group_weight: 25,
+    assignments: [
+        {
+            id: 1,
+            name: "Declare a Variable",
+            due_at: "2023-01-25",
+            points_possible: 50
+        },
+        {
+            id: 2,
+            name: "Write a Function",
+            due_at: "2023-02-27",
+            points_possible: 150
+        },
+        {
+            id: 3,
+            name: "Code the World",
+            due_at: "3156-11-15",
+            points_possible: 500
+        }
+    ]
+};
+
+// Same as AssignmentGroup, but group_weight exceeds 100 (is 125)
+const highPercentAG = {
+    id: 12345,
+    name: "Fundamentals of JavaScript",
+    course_id: 451,
+    group_weight: 125,
+    assignments: [
+        {
+            id: 1,
+            name: "Declare a Variable",
+            due_at: "2023-01-25",
+            points_possible: 50
+        },
+        {
+            id: 2,
+            name: "Write a Function",
+            due_at: "2023-02-27",
+            points_possible: 150
+        },
+        {
+            id: 3,
+            name: "Code the World",
+            due_at: "3156-11-15",
+            points_possible: 500
+        }
+    ]
+};
+
+// Assignment Group with negative id, empty name, decimal course_id, wrong type group_weight, repeated assignments (repeated id of 3)
+const erroneousAG = {
+    id: -12345,
+    name: "",
+    course_id: 4.51,
+    group_weight: "25",
+    assignments: [
+        {
+            id: 1,
+            name: "Declare a Variable",
+            due_at: "2023-01-25",
+            points_possible: 50
+        },
+        {
+            id: 2,
+            name: "Write a Function",
+            due_at: "2023-02-27",
+            points_possible: 150
+        },
+        {
+            id: 3,
+            name: "Code the World",
+            due_at: "3156-11-15",
+            points_possible: 500
+        },
+        {
+            id: 3, // Repeated id
+            name: "Code Outer Space",
+            due_at: "5167-10-05",
+            points_possible: 5000
+        },
+    ]
+};
+
+// Assignments wrong type
+const wrongAGassignments = {
+    id: 12345,
+    name: "Fundamentals of JavaScript",
+    course_id: 451,
+    group_weight: 25,
+    assignments: 100
+}
+
+// Assignments array has extra keys [0], one key is wrong [1], missing keys [2]
+const wrongAGassignments2 = {
+    id: 12345,
+    name: "Fundamentals of JavaScript",
+    course_id: 451,
+    group_weight: 25,
+    assignments: [
+        {
+            id: 1,
+            name: "Declare a Variable",
+            due_at: "2023-01-25",
+            points_possible: 50,
+            hasExtraCredit: true
+        },
+        {
+            id: 2,
+            name: "Write a Function",
+            due_at: "2023-02-27",
+            totalPoints: 150
+        },
+        {
+            id: 3,
+            name: "Code the World",
+            due_at: "3156-11-15"
+        }
+    ]
+}
+
+// Same as wrongAGassignments2, except other keys are also invalid (id is identification)
+const wrongAGassignments3 = {
+    identification: 12345,
+    name: "Fundamentals of JavaScript",
+    course_id: 451,
+    group_weight: 25,
+    assignments: [
+        {
+            id: 1,
+            name: "Declare a Variable",
+            due_at: "2023-01-25",
+            points_possible: 50,
+            hasExtraCredit: true
+        },
+        {
+            id: 2,
+            name: "Write a Function",
+            due_at: "2023-02-27",
+            totalPoints: 150
+        },
+        {
+            id: 3,
+            name: "Code the World",
+            due_at: "3156-11-15"
+        }
+    ]
+}
+
+
 // LearnerSubmissions, but elements are unordered
 const unorderedLearnerSubmissions = [
     {
@@ -1095,198 +1289,6 @@ const wrongLearnerSubs2 = [
     }
 ];
 
-// String id, array name
-const wrongCourseInfo = {
-    id: "4",
-    name: ["This", "is", "not", "a", "string"]
-};
-
-// Negative id, empty name
-const wrongCourseInfo2 = {
-    id: -643,
-    name: ""
-};
-
-// Decimal id, undefined name
-const wrongCourseInfo3 = {
-    id: 7.26,
-    name: undefined
-};
-
-// Wrong keys
-const wrongCourseInfo4 = {
-    identification: 45,
-    course_name: "This is a course name"
-};
-
-// Extra keys
-const wrongCourseInfo5 = {
-    id: 30,
-    name: "Too many keys!",
-    professor: "Professor Louie",
-    location: "Remote"
-};
-
-// Missing a key (name)
-const wrongCourseInfo6 = {
-    id: 40
-};
-
-
-// Same as AssignmentGroup, but course_id is 45 instead of 451
-const wrongCourseIdAG = {
-    id: 12345,
-    name: "Fundamentals of JavaScript",
-    course_id: 45,
-    group_weight: 25,
-    assignments: [
-        {
-            id: 1,
-            name: "Declare a Variable",
-            due_at: "2023-01-25",
-            points_possible: 50
-        },
-        {
-            id: 2,
-            name: "Write a Function",
-            due_at: "2023-02-27",
-            points_possible: 150
-        },
-        {
-            id: 3,
-            name: "Code the World",
-            due_at: "3156-11-15",
-            points_possible: 500
-        }
-    ]
-};
-
-// Same as AssignmentGroup, but group_weight exceeds 100 (is 125)
-const highPercentAG = {
-    id: 12345,
-    name: "Fundamentals of JavaScript",
-    course_id: 451,
-    group_weight: 125,
-    assignments: [
-        {
-            id: 1,
-            name: "Declare a Variable",
-            due_at: "2023-01-25",
-            points_possible: 50
-        },
-        {
-            id: 2,
-            name: "Write a Function",
-            due_at: "2023-02-27",
-            points_possible: 150
-        },
-        {
-            id: 3,
-            name: "Code the World",
-            due_at: "3156-11-15",
-            points_possible: 500
-        }
-    ]
-};
-
-// Assignments wrong type
-const wrongAGassignments = {
-    id: 12345,
-    name: "Fundamentals of JavaScript",
-    course_id: 451,
-    group_weight: 25,
-    assignments: 100
-}
-
-// Assignments array has extra keys [0], one key is wrong [1], missing keys [2]
-const wrongAGassignments2 = {
-    id: 12345,
-    name: "Fundamentals of JavaScript",
-    course_id: 451,
-    group_weight: 25,
-    assignments: [
-        {
-            id: 1,
-            name: "Declare a Variable",
-            due_at: "2023-01-25",
-            points_possible: 50,
-            hasExtraCredit: true
-        },
-        {
-            id: 2,
-            name: "Write a Function",
-            due_at: "2023-02-27",
-            totalPoints: 150
-        },
-        {
-            id: 3,
-            name: "Code the World",
-            due_at: "3156-11-15"
-        }
-    ]
-}
-
-// Same as wrongAGassignments2, except other keys are also invalid (id is identification)
-const wrongAGassignments3 = {
-    identification: 12345,
-    name: "Fundamentals of JavaScript",
-    course_id: 451,
-    group_weight: 25,
-    assignments: [
-        {
-            id: 1,
-            name: "Declare a Variable",
-            due_at: "2023-01-25",
-            points_possible: 50,
-            hasExtraCredit: true
-        },
-        {
-            id: 2,
-            name: "Write a Function",
-            due_at: "2023-02-27",
-            totalPoints: 150
-        },
-        {
-            id: 3,
-            name: "Code the World",
-            due_at: "3156-11-15"
-        }
-    ]
-}
-
-// Assignment Group with negative id, empty name, decimal course_id, wrong type group_weight, repeated assignments (repeated id of 3)
-const erroneousAG = {
-    id: -12345,
-    name: "",
-    course_id: 4.51,
-    group_weight: "25",
-    assignments: [
-        {
-            id: 1,
-            name: "Declare a Variable",
-            due_at: "2023-01-25",
-            points_possible: 50
-        },
-        {
-            id: 2,
-            name: "Write a Function",
-            due_at: "2023-02-27",
-            points_possible: 150
-        },
-        {
-            id: 3,
-            name: "Code the World",
-            due_at: "3156-11-15",
-            points_possible: 500
-        },
-        {
-            id: 3, // Repeated id
-            name: "Code Outer Space",
-            due_at: "5167-10-05",
-            points_possible: 5000
-        },
-    ]
-};
 
 // Result Tests
 const result = getLearnerData(CourseInfo, AssignmentGroup, LearnerSubmissions); // Initial test
@@ -1325,15 +1327,15 @@ console.log("Result:\n", result);
 // const emptyAssignmentGroupResult = getLearnerData(CourseInfo, {}, LearnerSubmissions);
 // validateResults("Empty Assignment Group Result", emptyAssignmentGroupResult, expectedResult); // Tests passed!
 
-// // Test case for negative id, empty name, decimal course_id, wrong type group_weight, repeated assignments (repeated id of 3)
-// const erroneousAGResult = getLearnerData(CourseInfo, erroneousAG, LearnerSubmissions);
-// validateResults("Erroneous Assignment Group", erroneousAGResult, expectedResult); // Tests passed!
-
 // const wrongCourseIdAgResults = getLearnerData(CourseInfo, wrongCourseIdAG, LearnerSubmissions);
 // validateResults("Assignment Group with Wrong Course Id", wrongCourseIdAgResults, expectedResult); // Tests passed!
 
 // const highPercentAGResults = getLearnerData(CourseInfo, highPercentAG, LearnerSubmissions);
 // validateResults("Assignment Group with Group Weight > 100", highPercentAGResults, expectedResult); // Tests passed!
+
+// // Test case for negative id, empty name, decimal course_id, wrong type group_weight, repeated assignments (repeated id of 3)
+// const erroneousAGResult = getLearnerData(CourseInfo, erroneousAG, LearnerSubmissions);
+// validateResults("Erroneous Assignment Group", erroneousAGResult, expectedResult); // Tests passed!
 
 // const wrongAGassignmentsResult = getLearnerData(CourseInfo, wrongAGassignments, LearnerSubmissions);
 // validateResults("Assignment Group's Assignments With Wrong Type", wrongAGassignmentsResult, expectedResult); // Tests passed! An array is an object so the error message is fine.

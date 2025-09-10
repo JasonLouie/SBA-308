@@ -266,7 +266,7 @@ validateResults("Original Test", result, expectedResult);
 ```
 
 </td>
-<td>Original Test. Regular test to validate that getLearnerData properly parsed data and matches the expectedResults provided. Also confirms that validateResults properly checks for equality between the two arrays.</td> <td>TBA</td>
+<td>Original Test. Regular test to validate that getLearnerData properly parsed data and matches the expectedResults provided. Also confirms that validateResults properly checks for equality between the two arrays.</td> <td><img src="./error_logs/results1.png"></td>
 </tr>
 
 <tr>
@@ -412,16 +412,8 @@ validateResults("Wrong Value Types for Keys", wrongTypeResult, expectedResult);
 <td>
 
 ```javascript
-const emptyCourseInfoResult = getLearnerData(
-    {},
-    AssignmentGroup,
-    LearnerSubmissions
-);
-validateResults(
-    "Empty Course Info Result",
-    emptyCourseInfoResult,
-    expectedResult
-);
+const emptyCourseInfoResult = getLearnerData({}, AssignmentGroup, LearnerSubmissions);
+validateResults("Empty Course Info Result", emptyCourseInfoResult, expectedResult);
 ```
 
 </td>
@@ -436,16 +428,8 @@ const wrongCourseInfo = {
     id: "4",
     name: ["This", "is", "not", "a", "string"],
 };
-const wrongCourseInfoResults = getLearnerData(
-    wrongCourseInfo,
-    AssignmentGroup,
-    LearnerSubmissions
-);
-validateResults(
-    "String Id and Array Name for Course Info",
-    wrongCourseInfo,
-    expectedResult
-);
+const wrongCourseInfoResults = getLearnerData(wrongCourseInfo, AssignmentGroup, LearnerSubmissions);
+validateResults("String Id and Array Name for Course Info", wrongCourseInfo, expectedResult);
 ```
 
 </td>
@@ -465,7 +449,7 @@ validateResults("Negative Id and Empty Name for Course Info", wrongCourseInfo2Re
 ```
 
 </td>
-<td>STATEMENT. Confirms that getLearnerData and validateResults gracefully handle this scenario.</td> <td>TBA</td>
+<td>Tests behavior of both getLearnerData and validateResults when id is negative and name is an empty string. Confirms that getLearnerData and validateResults gracefully handle this scenario.</td> <td>TBA</td>
 </tr>
 
 <tr>
@@ -481,7 +465,7 @@ validateResults("Decimal Id and Undefined Name for Course Info", wrongCourseInfo
 ```
 
 </td>
-<td>STATEMENT. Confirms that getLearnerData and validateResults gracefully handle this scenario.</td> <td>TBA</td>
+<td>Tests behavior of both getLearnerData and validateResults when the course's id is a decimal and course's name is undefined. Confirms that getLearnerData and validateResults gracefully handle this scenario.</td> <td>TBA</td>
 </tr>
 
 <tr>
@@ -492,10 +476,12 @@ const wrongCourseInfo4 = {
     identification: 45,
     course_name: "This is a course name"
 };
+const wrongCourseInfo4Results = getLearnerData(wrongCourseInfo4, AssignmentGroup, LearnerSubmissions);
+validateResults("Wrong Key Names for Course Info", wrongCourseInfo4Results, expectedResult);
 ```
 
 </td>
-<td>STATEMENT. Confirms that getLearnerData and validateResults gracefully handle this scenario.</td> <td>TBA</td>
+<td>Tests behavior of both getLearnerData and validateResults when the course's keys are wrong. Confirms that getLearnerData and validateResults gracefully handle this scenario.</td> <td>TBA</td>
 </tr>
 
 <tr>
@@ -508,10 +494,12 @@ const wrongCourseInfo5 = {
     professor: "Professor Louie",
     location: "Remote"
 };
+const wrongCourseInfo5Results = getLearnerData(wrongCourseInfo5, AssignmentGroup, LearnerSubmissions);
+validateResults("Too Many Keys for Course Info", wrongCourseInfo5Results, expectedResult);
 ```
 
 </td>
-<td>STATEMENT. Confirms that getLearnerData and validateResults gracefully handle this scenario.</td> <td>TBA</td>
+<td>Tests behavior of both getLearnerData and validateResults when the course has extra keys. Confirms that getLearnerData and validateResults gracefully handle this scenario.</td> <td>TBA</td>
 </tr>
 
 <tr>
@@ -521,10 +509,490 @@ const wrongCourseInfo5 = {
 const wrongCourseInfo6 = {
     id: 40
 };
+const wrongCourseInfo6Results = getLearnerData(wrongCourseInfo6, AssignmentGroup, LearnerSubmissions);
+validateResults("Missing Name Key for Course Info", wrongCourseInfo6Results, expectedResult);
 ```
 
 </td>
-<td>STATEMENT. Confirms that getLearnerData and validateResults gracefully handle this scenario.</td> <td>TBA</td>
+<td>Tests behavior of both getLearnerData and validateResults when the course has a missing key. Confirms that getLearnerData and validateResults gracefully handle this scenario.</td> <td>TBA</td>
+</tr>
+
+<tr>
+<td>
+
+```javascript
+const emptyAssignmentGroupResult = getLearnerData(CourseInfo, {}, LearnerSubmissions);
+validateResults("Empty Assignment Group Result", emptyAssignmentGroupResult, expectedResult);
+```
+
+</td>
+<td>Tests behavior of both getLearnerData and validateResults when assignment group is an object with no key-value pairs. Confirms that getLearnerData and validateResults gracefully handle this scenario.</td> <td>TBA</td>
+</tr>
+
+<tr>
+<td>
+
+```javascript
+const wrongCourseIdAG = {
+    id: 12345,
+    name: "Fundamentals of JavaScript",
+    course_id: 45,
+    group_weight: 25,
+    assignments: [
+        {
+            id: 1,
+            name: "Declare a Variable",
+            due_at: "2023-01-25",
+            points_possible: 50
+        },
+        {
+            id: 2,
+            name: "Write a Function",
+            due_at: "2023-02-27",
+            points_possible: 150
+        },
+        {
+            id: 3,
+            name: "Code the World",
+            due_at: "3156-11-15",
+            points_possible: 500
+        }
+    ]
+};
+const wrongCourseIdAgResults = getLearnerData(CourseInfo, wrongCourseIdAG, LearnerSubmissions);
+validateResults("Assignment Group with Wrong Course Id", wrongCourseIdAgResults, expectedResult);
+```
+
+</td>
+<td>Tests behavior of both getLearnerData and validateResults when assignment group's course id does not match the course's id. Confirms that getLearnerData and validateResults gracefully handle this scenario.</td> <td>TBA</td>
+</tr>
+
+<tr>
+<td>
+
+```javascript
+const highPercentAG = {
+    id: 12345,
+    name: "Fundamentals of JavaScript",
+    course_id: 451,
+    group_weight: 125,
+    assignments: [
+        {
+            id: 1,
+            name: "Declare a Variable",
+            due_at: "2023-01-25",
+            points_possible: 50
+        },
+        {
+            id: 2,
+            name: "Write a Function",
+            due_at: "2023-02-27",
+            points_possible: 150
+        },
+        {
+            id: 3,
+            name: "Code the World",
+            due_at: "3156-11-15",
+            points_possible: 500
+        }
+    ]
+};
+const highPercentAGResults = getLearnerData(CourseInfo, highPercentAG, LearnerSubmissions);
+validateResults("Assignment Group with Group Weight > 100", highPercentAGResults, expectedResult);
+```
+
+</td>
+<td>Tests behavior of both getLearnerData and validateResults when assignment group's group_weight exceeds 100. Confirms that getLearnerData and validateResults gracefully handle this scenario.</td> <td>TBA</td>
+</tr>
+
+<tr>
+<td>
+
+```javascript
+const erroneousAG = {
+    id: -12345,
+    name: "",
+    course_id: 4.51,
+    group_weight: "25",
+    assignments: [
+        {
+            id: 1,
+            name: "Declare a Variable",
+            due_at: "2023-01-25",
+            points_possible: 50
+        },
+        {
+            id: 2,
+            name: "Write a Function",
+            due_at: "2023-02-27",
+            points_possible: 150
+        },
+        {
+            id: 3,
+            name: "Code the World",
+            due_at: "3156-11-15",
+            points_possible: 500
+        },
+        {
+            id: 3, // Repeated id
+            name: "Code Outer Space",
+            due_at: "5167-10-05",
+            points_possible: 5000
+        },
+    ]
+};
+const erroneousAGResult = getLearnerData(CourseInfo, erroneousAG, LearnerSubmissions);
+validateResults("Erroneous Assignment Group", erroneousAGResult, expectedResult);
+```
+
+</td>
+<td>Tests behavior of both getLearnerData and validateResults when assignment group has a negative id, empty name, decimal course_id, wrong type group_weight, and repeated assignments (repeated id of 3). Confirms that getLearnerData and validateResults gracefully handle this scenario.</td> <td>TBA</td>
+</tr>
+
+<tr>
+<td>
+
+```javascript
+const wrongAGassignments = {
+    id: 12345,
+    name: "Fundamentals of JavaScript",
+    course_id: 451,
+    group_weight: 25,
+    assignments: 100
+};
+const wrongAGassignmentsResult = getLearnerData(CourseInfo, wrongAGassignments, LearnerSubmissions);
+validateResults("Assignment Group's Assignments With Wrong Type", wrongAGassignmentsResult, expectedResult);
+```
+
+</td>
+<td>Tests behavior of both getLearnerData and validateResults when assignment group's assignments key-value pair has the wrong value type. Confirms that getLearnerData and validateResults gracefully handle this scenario.</td> <td>TBA</td>
+</tr>
+
+<tr>
+<td>
+
+```javascript
+const wrongAGassignments2 = {
+    id: 12345,
+    name: "Fundamentals of JavaScript",
+    course_id: 451,
+    group_weight: 25,
+    assignments: [
+        {
+            id: 1,
+            name: "Declare a Variable",
+            due_at: "2023-01-25",
+            points_possible: 50,
+            hasExtraCredit: true
+        },
+        {
+            id: 2,
+            name: "Write a Function",
+            due_at: "2023-02-27",
+            totalPoints: 150
+        },
+        {
+            id: 3,
+            name: "Code the World",
+            due_at: "3156-11-15"
+        }
+    ]
+};
+const wrongAGassignments2Result = getLearnerData(CourseInfo, wrongAGassignments2, LearnerSubmissions);
+validateResults("Assignment Group's Assignments With Extra Key, Incorrect Key, and Missing Key", wrongAGassignments2Result, expectedResult);
+```
+
+</td>
+<td>Tests behavior of both getLearnerData and validateResults when assignment group's assignments has an extra key at index 0, incorrect key at index 1 (totalPoints instead of points_possible), and missing key (points_possible) at index 2. Confirms that getLearnerData and validateResults gracefully handle this scenario.</td> <td>TBA</td>
+</tr>
+
+<tr>
+<td>
+
+```javascript
+const wrongAGassignments3 = {
+    identification: 12345,
+    name: "Fundamentals of JavaScript",
+    course_id: 451,
+    group_weight: 25,
+    assignments: [
+        {
+            id: 1,
+            name: "Declare a Variable",
+            due_at: "2023-01-25",
+            points_possible: 50,
+            hasExtraCredit: true
+        },
+        {
+            id: 2,
+            name: "Write a Function",
+            due_at: "2023-02-27",
+            totalPoints: 150
+        },
+        {
+            id: 3,
+            name: "Code the World",
+            due_at: "3156-11-15"
+        }
+    ]
+}
+const wrongAGassignments3Result = getLearnerData(CourseInfo, wrongAGassignments3, LearnerSubmissions);
+validateResults("Assignment Group's Id Key Wrong Name and Assignments Key Errors", wrongAGassignments3Result, expectedResult);
+```
+
+</td>
+<td>Tests behavior of both getLearnerData and validateResults when assignment group's id key is incorrect and the assignments array has the same key errors from before. The key errors from the assignments array do not display in the console as intended because the validation stops when an invalid key is encountered. Confirms that getLearnerData and validateResults gracefully handle this scenario.</td> <td>TBA</td>
+</tr>
+
+<tr>
+<td>
+
+```javascript
+const emptyLearnerSubmissionsResult = getLearnerData(CourseInfo, AssignmentGroup, []);
+validateResults("Empty Learner Submissions Result", emptyLearnerSubmissionsResult, expectedResult);
+```
+
+</td>
+<td>Tests behavior of both getLearnerData and validateResults when the submissions array is empty. Confirms that getLearnerData and validateResults gracefully handle this scenario.</td> <td>TBA</td>
+</tr>
+
+<tr>
+<td>
+
+```javascript
+const unorderedLearnerSubmissions = [
+    {
+        learner_id: 125,
+        assignment_id: 3,
+        submission: {
+            submitted_at: "2023-01-25",
+            score: 400
+        }
+    },
+    {
+        learner_id: 132,
+        assignment_id: 2,
+        submission: {
+            submitted_at: "2023-03-07",
+            score: 140
+        }
+    },
+    {
+        learner_id: 125,
+        assignment_id: 1,
+        submission: {
+            submitted_at: "2023-01-25",
+            score: 47
+        }
+    },
+    {
+        learner_id: 132,
+        assignment_id: 1,
+        submission: {
+            submitted_at: "2023-01-24",
+            score: 39
+        }
+    },
+    {
+        learner_id: 125,
+        assignment_id: 2,
+        submission: {
+            submitted_at: "2023-02-12",
+            score: 150
+        }
+    }
+];
+const unorderedResult = getLearnerData(CourseInfo, AssignmentGroup, unorderedLearnerSubmissions);
+validateResults("Unordered Submissions", unorderedResult, expectedResult);
+```
+
+</td>
+<td>Tests behavior of both getLearnerData and validateResults when the submissions array is not ordered by learner_id and assignment_id. Tests passed because results are unequal. Order does matter because the first learner added is id 132. This is because a learner object is not created for learner id 125 for an assignment not due yet. This is to avoid creating a learner object for someone that only turned in an assignment that is not due yet. Creating that learner object and adding it to the results will result in invalid data. Confirms that getLearnerData and validateResults gracefully handle this scenario.</td> <td>TBA</td>
+</tr>
+
+<tr>
+<td>
+
+```javascript
+const duplicateLearnerSubmissions = [
+    {
+        learner_id: 125,
+        assignment_id: 3,
+        submission: {
+            submitted_at: "2023-01-25",
+            score: 400
+        }
+    },
+    {
+        learner_id: 132,
+        assignment_id: 2,
+        submission: {
+            submitted_at: "2023-03-07",
+            score: 140
+        }
+    },
+    {
+        learner_id: 125,
+        assignment_id: 1,
+        submission: {
+            submitted_at: "2023-01-25",
+            score: 47
+        }
+    },
+    {
+        learner_id: 132,
+        assignment_id: 1,
+        submission: {
+            submitted_at: "2023-01-24",
+            score: 39
+        }
+    },
+    {
+        learner_id: 125,
+        assignment_id: 2,
+        submission: {
+            submitted_at: "2023-02-12",
+            score: 150
+        }
+    },
+    {
+        learner_id: 132,
+        assignment_id: 2,
+        submission: {
+            submitted_at: "2023-02-27",
+            score: 140
+        }
+    },
+];
+const duplicateLSResult = getLearnerData(CourseInfo, AssignmentGroup, duplicateLearnerSubmissions);
+validateResults("Duplicated Entry of Pair (learner_id, assignment_id)", duplicateLSResult, expectedResult);
+```
+
+</td>
+<td>Tests behavior of both getLearnerData and validateResults when the submissions array contains two entries with the same learner_id and assignment_id. An error is thrown because these Learner Submission objects must be unique. Confirms that getLearnerData and validateResults gracefully handle this scenario.</td> <td>TBA</td>
+</tr>
+
+<tr>
+<td>
+
+```javascript
+const wrongLearnerSubs = [
+    {
+        learner_id: "125",
+        assignment_id: undefined,
+        submission: {
+            date_submitted: "2023-01-25",
+            points_earned: 47
+        }
+    },
+    {
+        learner_id: -125,
+        assignment_id: 2.3,
+        submission: {
+            submitted_at: "2023-02-12",
+        }
+    },
+    {
+        learner_id: 125,
+        submission: {
+            submitted_at: "2023-01-25",
+            score: 400
+        }
+    },
+    {
+        learner_id: 132,
+        assignment_id: 12,
+        submission: {
+            submitted_at: "2023-01-24",
+            score: 39,
+            time_submitted: "08:56 PM"
+        }
+    },
+    {
+        learner_id: 132,
+        assignment_id: 2,
+        submission: {
+            submitted_at: 2023,
+            score: "140"
+        }
+    }
+];
+const wrongLearnerSubsResult = getLearnerData(CourseInfo, AssignmentGroup, wrongLearnerSubs);
+validateResults("LearnerSubs With Errors (Check comments by Sub's Declaration)", wrongLearnerSubsResult, expectedResult);
+```
+
+</td>
+<td>Tests behavior of both getLearnerData and validateResults when the submissions array contains various errors. The entry at index 0 contains the wrong learner_id type, undefined assignment_id, and learner submission object with wrong keys (submitted_at -> date_submitted and score -> points_earned) but same amount of keys. The entry at index 1 contains a negative learner_id, assignment_id as a float, and learner submission object with missing key (score). The entry at index 2 contains a missing key of assignment_id. The entry at index 3 contains an assignment_id that doesn't exist in the assignment group object and the learner submission object has an extra key (time_submitted). The entry at index 4 has proper learner_id and assignment_id, but the learner submission object has incorrect value types. Errors are thrown as shown in the image of the console. Confirms that getLearnerData and validateResults gracefully handle this scenario.</td> <td>TBA</td>
+</tr>
+
+<tr>
+<td>
+
+```javascript
+const wrongLearnerSubs2 = [
+    {
+        learner_id: 125,
+        assignment_id: 1,
+        submission: [
+            "2023-01-25",
+            47
+        ]
+    },
+    {
+        learner_id: 125,
+        assignment_id: 2,
+        submission: {
+            submitted_at: "This is not a date",
+            score: -150
+        }
+    },
+    {
+        learner_id: 125,
+        assignment_id: 3,
+        submission: {
+            submitted_at: undefined,
+            score: undefined
+        }
+    },
+    {
+        learner_id: 132,
+        assignment_id: 1,
+        submission: {
+            submitted_at: "2023-01-39",
+            score: 39
+        }
+    },
+    {
+        learner_id: 132,
+        assignment_id: 2,
+        submission: {
+            submitted_at: "2023-13-07",
+            score: 140
+        }
+    },
+    {
+        learner_id: 132,
+        assignment_id: 3,
+        submission: {
+            submitted_at: "224-03-07",
+            score: 140
+        }
+    },
+    {
+        learner_id: 138,
+        assignment_id: 1,
+        submission: {
+            submitted_at: "2024-03-07-5",
+            score: 140
+        }
+    }
+];
+const wrongLearnerSubs2Result = getLearnerData(CourseInfo, AssignmentGroup, wrongLearnerSubs2);
+validateResults("LearnerSubs With Errors (Check comments by Sub's Declaration)", wrongLearnerSubs2Result, expectedResult);
+```
+
+</td>
+<td>Tests behavior of both getLearnerData and validateResults when the submissions with various errors. The entry at index 0 has the learner submission object as an array (this isn't how it should be). Since an array is an object, the numerical indexes are treated as keys, so errors are thrown for mismatching keys. The entry at index 1 contains a learner submission object with correct value types, but invalid values (invalid date and a negative score). The entry at index 2 contains a learner submission object with an undefined score and undefined submitted_at. The entry at index 3 contains a learner submission object with an invalid submitted_at (Nonexistent day of month). The entry at index 4 contains a learner submission object with an invalid submitted_at (Nonexistent month). The entry at index 5 contains a learner submission object with an invalid submitted_at (Year does not have 4 characters as expected). The entry at index 6 contains a learner submission object with an invalid submitted_at (Date has too many '-'). Errors are thrown and logged in an organized manner. Confirms that getLearnerData and validateResults gracefully handle this scenario.</td> <td>TBA</td>
 </tr>
 
 </table>
