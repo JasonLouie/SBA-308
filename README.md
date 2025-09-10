@@ -295,7 +295,7 @@ validateResults(
 ```
 
 </td>
-<td>Tests behavior for different value for a key. Confirm that validateResults gracefully handles wrong value for a key.</td> <td>TBA</td>
+<td>Tests behavior for different value for a key. Confirm that validateResults gracefully handles wrong value for a key.</td> <td><img src="./error_logs/results2.png"></td>
 </tr>
 
 <tr>
@@ -324,7 +324,7 @@ validateResults(
 ```
 
 </td>
-<td>Tests behavior for different keys in result. Case for the result having the wrong keys. Confirm that validateResults gracefully handles wrong keys.</td> <td>TBA</td>
+<td>Tests behavior for different keys in result. Case for the result having the wrong keys. Confirm that validateResults gracefully handles wrong keys.</td> <td><img src="./error_logs/results3.png"></td>
 </tr>
 
 <tr>
@@ -361,7 +361,7 @@ validateResults("More Results Should be Expected", lessResult, expectedResult);
 ```
 
 </td>
-<td>Tests behavior for more results in the result array than expected. Confirm that validateResults gracefully handles extra data.</td> <td>TBA</td>
+<td>Tests behavior for more results in the result array than expected. Confirm that validateResults gracefully handles extra data.</td> <td><img src="./error_logs/results4.png"></td>
 </tr>
 
 <tr>
@@ -380,7 +380,7 @@ validateResults("Less Results Should be Expected", moreResult, expectedResult);
 ```
 
 </td>
-<td>Tests behavior for less results in the result array than expected. Confirm that validateResults gracefully handles missing data.</td> <td>TBA</td>
+<td>Tests behavior for less results in the result array than expected. Confirm that validateResults gracefully handles missing data.</td> <td><img src="./error_logs/results5.png"></td>
 </tr>
 
 <tr>
@@ -405,7 +405,7 @@ validateResults("Wrong Value Types for Keys", wrongTypeResult, expectedResult);
 ```
 
 </td>
-<td>Tests behavior for the result containing wrong values for keys. Confirm that validateResults gracefully handles wrong value types for keys.</td> <td>TBA</td>
+<td>Tests behavior for the result containing wrong values for keys. Confirm that validateResults gracefully handles wrong value types for keys.</td> <td><img src="./error_logs/results6.png"></td>
 </tr>
 
 <tr>
